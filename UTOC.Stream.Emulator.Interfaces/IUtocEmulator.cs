@@ -5,4 +5,6 @@ public interface IUtocEmulator
         bool bFileAccessLogEnabled, Action<string> addPakFolder, Action<string> removePakFolder);
 
     public void AddFromFolder(string modId, string folder);
+
+    public void CallGetTocFilenames(string tocPath, int version);
 }

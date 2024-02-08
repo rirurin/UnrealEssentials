@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using UTOC.Stream.Emulator.Interfaces;
 using static UnrealEssentials.Unreal.UnrealArray;
 using static UnrealEssentials.Unreal.UnrealString;
 
@@ -28,4 +29,6 @@ internal unsafe class Native
     internal delegate nuint PakOpenAsyncReadDelegate(nint thisPtr, nint fileNamePtr);
     internal delegate bool IsNonPakFilenameAllowedDelegate(nuint thisPtr, FString* Filename);
     internal delegate bool FileExistsDlegate(nuint thisPtr, char* Filename);
+    internal delegate nuint FIoBatchReadInternal(nuint thisPtr, FIoChunkId* ioChunkIdPtr, nuint ioReadOptionsPtr, int priority);
+    internal delegate nuint FIoStoreTocResurceRead(nuint retStorage, nint tocFilePath, int readOptions, nuint outTocResource);
 }

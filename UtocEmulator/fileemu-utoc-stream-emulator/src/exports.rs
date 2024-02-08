@@ -1,5 +1,6 @@
 use crate::{
-    asset_collector, 
+    asset_collector,
+    file_log,
     toc_factory, toc_factory::{CONTAINER_DATA, CONTAINER_ENTRIES_OSPATH_POOL, TARGET_TOC, TARGET_CAS, PartitionBlock}
 };
 use std::{
@@ -34,7 +35,7 @@ pub unsafe extern "C" fn BuildTableOfContentsEx(
     let cas_path = base_path_owned.to_owned() + "\\" + TARGET_CAS;
     match toc_factory::build_table_of_contents(&toc_path, version) {
         Some(n) => {
-            println!("Built table of contents");
+            println!("Built table of contents, version {}", version);
             // UTOC
             *tocLength = n.len() as u64; // set length parameter
             *tocData = n.leak().as_ptr(); // leak memory lol (toc data needs to live for rest of program)
@@ -69,5 +70,12 @@ pub unsafe extern "C" fn GetTocFilenames(tocPath: *const c_char, chunkIds: *mut 
     // this gets called when the target TOC already has an open file handle made by Win32
     // all we need to get the info needed for filenames is to read header and directory index
     println!("UTOC Emulator File Access TODO for {}", filename);
+    false
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn GetTocFilenamesEx(tocPath: *const c_char, version: u32, chunkIds: *mut *const u8, names: *mut *const u8) -> bool {
+    file_log::get_toc_filenames(CStr::from_ptr(tocPath).to_str().unwrap(), version);
     false
 }

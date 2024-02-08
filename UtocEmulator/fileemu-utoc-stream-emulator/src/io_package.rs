@@ -501,7 +501,6 @@ impl ObjectExport2 {
         // Convert FObjectImport into named ObjectImport
         let mut resolves = vec![];
         for (i, v) in map.into_iter().enumerate() {
-            println!("{}, {:?}", i, v);
             resolves.push(v.resolve(names, imports, map, file_name, game_name));
         }
         resolves

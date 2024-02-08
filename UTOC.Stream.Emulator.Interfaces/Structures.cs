@@ -1,4 +1,6 @@
-﻿namespace UTOC.Stream.Emulator.Interfaces;
+﻿using System.Runtime.InteropServices;
+
+namespace UTOC.Stream.Emulator.Interfaces;
 
 public enum TocType
 {
@@ -21,5 +23,25 @@ public enum PakType
     FNameBasedCompressionB = 7,
     FrozenIndex = 8,
     Fn64BugFix = 9
+}
+
+[StructLayout(LayoutKind.Sequential, Size = 0xc)]
+public unsafe struct FIoChunkId : IEquatable<FIoChunkId>
+{
+    public byte GetByte(int idx) { fixed (FIoChunkId* self = &this) return *(byte*)((IntPtr)self + idx); }
+    public string GetId()
+    {
+        string key_out = "0x";
+        for (int i = 0; i < 0xc; i++) key_out += $"{GetByte(i):X2}";
+        return key_out;
+    }
+    public bool Equals(FIoChunkId other)
+    {
+        fixed (FIoChunkId* self = &this)
+        {
+            if (*(ulong*)self != *(ulong*)&other) return false;
+            return true;
+        }
+    }
 }
 

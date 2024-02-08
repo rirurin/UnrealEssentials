@@ -36,5 +36,8 @@ namespace UTOC.Stream.Emulator
         [DllImport("fileemu_utoc_stream_emulator")]
         public static extern bool GetTocFilenames(string tocPath, ref nint chunkIds, ref nint names);
         // On our side, build a dictionary to search for these entries
+
+        [DllImport("fileemu_utoc_stream_emulator")]
+        public static extern bool GetTocFilenamesEx(string tocPath, int version, ref nint chunkIds, ref nint names);
     }
 }

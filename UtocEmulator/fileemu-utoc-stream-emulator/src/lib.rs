@@ -3,6 +3,7 @@
 
 pub mod asset_collector; // Building tree of directories/files
 pub mod exports; // FFI (called from C#)
+pub mod file_log; // (Added in 1.1) IO Store file log
 pub mod io_package; // Handling IO Store packages
 pub mod io_toc; // Types for IO Store Table of Contents
 pub mod pak_package; // Handling cooked packages (WIP)

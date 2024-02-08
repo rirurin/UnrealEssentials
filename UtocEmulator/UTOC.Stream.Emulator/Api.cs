@@ -24,4 +24,11 @@ public class Api : IUtocEmulator
     }
 
     internal delegate void InitialiseDelegate(TocType? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, bool bFileAccessLogEnabled, Action<string> addPakFolder, Action<string> removePakFolder);
+
+    public void CallGetTocFilenames(string tocPath, int version)
+    {
+        var chunkIds = (nint)0;
+        var names = (nint)0;
+        RustApi.GetTocFilenamesEx(tocPath, version, ref chunkIds, ref names);
+    }
 }

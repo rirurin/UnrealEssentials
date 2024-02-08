@@ -14,6 +14,7 @@ using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
 using Reloaded.Mod.Interfaces.Internal;
 using Reloaded.Memory.Sigscan.Definitions;
 using UTOC.Stream.Emulator.Interfaces;
+using Reloaded.Memory.Sigscan.Definitions.Structs;
 
 namespace UnrealEssentials;
 /// <summary>
@@ -60,6 +61,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
     private IHook<PakOpenAsyncReadDelegate> _pakOpenAsyncReadHook;
     private IHook<IsNonPakFilenameAllowedDelegate> _isNonPakFilenameAllowedHook;
     private IHook<FileExistsDlegate> _fileExistsHook;
+    private IHook<FIoBatchReadInternal> _ioBatchReadInternalHook;
+    private IHook<FIoStoreTocResurceRead> _ioStoreTocResourceReadHook;
 
     private FPakSigningKeys* _signingKeys;
     private string _modsPath;
@@ -68,6 +71,8 @@ public unsafe class Mod : ModBase // <= Do not Remove.
 
     private IUtocEmulator _utocEmulator;
     private bool _hasUtocs;
+
+    private FIoChunkId? lastChunk = null;
 
     public Mod(ModContext context)
     {
@@ -138,6 +143,18 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         {
             _fileExistsHook = _hooks.CreateHook<FileExistsDlegate>(FileExists, address).Activate();
         });
+        // Io Store Logging
+        if (_hasUtocs)
+        {
+            SigScan(sigs.IoBatchReadInternal, "IoBatchReadInternal", address =>
+            {
+                _ioBatchReadInternalHook = _hooks.CreateHook<FIoBatchReadInternal>(FIoBatchReadInternalImpl, address).Activate();
+            });
+            SigScan(sigs.IoStoreTocResourceRead, "IoStoreTocResourceRead", address =>
+            {
+                _ioStoreTocResourceReadHook = _hooks.CreateHook<FIoStoreTocResurceRead>(IoStoreTocResurceReadImpl, address).Activate();
+            });
+        }
 
         // Gather pak files from mods
         //_modLoader.OnModLoaderInitialized += ModLoaderInit;
@@ -189,18 +206,26 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         // Try and find based on branch name
         _modLoader.GetController<IScannerFactory>().TryGetTarget(out var scannerFactory);
         var scanner = scannerFactory.CreateScanner(CurrentProcess, mainModule);
-        var res = scanner.FindPattern("2B 00 2B 00 55 00 45 00 34 00 2B 00"); // ++UE4+
-        if (!res.Found)
+        var versionSignatures = new string[]
         {
-            res = scanner.FindPattern("2B 00 2B 00 75 00 65 00 34 00 2B 00"); // ++ue4+
-            if (!res.Found)
-            {
-                throw new Exception($"Unable to find Unreal Engine version number." +
+            "2B 00 2B 00 55 00 45 00 34 00 2B 00", // ++UE4+
+            "2B 00 2B 00 75 00 65 00 34 00 2B 00", // ++ue4+
+            "2B 00 2B 00 55 00 45 00 35 00 2B 00", // ++UE5+
+            "2B 00 2B 00 75 00 65 00 35 00 2B 00", // ++ue5+
+        };
+        PatternScanResult? verScanRes = null;
+        Parallel.ForEach(versionSignatures, verSig =>
+        {
+            var currVerRes = scanner.FindPattern(verSig);
+            if (currVerRes.Found) verScanRes = currVerRes;
+        });
+        if (verScanRes == null)
+        {
+            throw new Exception($"Unable to find Unreal Engine version number." +
                     $"\nPlease report this!");
-            }
         }
 
-        string branch = Marshal.PtrToStringUni(res.Offset + BaseAddress)!;
+        string branch = Marshal.PtrToStringUni(verScanRes.Value.Offset + BaseAddress)!;
         Log($"Unreal Engine branch is {branch}");
         if (!Signatures.VersionSigs.TryGetValue(branch, out sigs))
         {
@@ -349,6 +374,27 @@ public unsafe class Mod : ModBase // <= Do not Remove.
             var str = new FString(pakFolder);
             outPakFolders->Add(str);
         }
+    }
+    private unsafe nuint FIoBatchReadInternalImpl(nuint thisPtr, FIoChunkId* ioChunkIdPtr, nuint ioReadOptionsPtr, int priority)
+    {
+        if (_configuration.FileAccessLog)
+        {
+            // Textures send a read request for each mipmap, so check last chunk to avoid showing the duplicate requests
+            if (lastChunk != null && !lastChunk.Value.Equals(*ioChunkIdPtr)) Log($"Reading: {ioChunkIdPtr->GetId()}");
+            lastChunk = *ioChunkIdPtr;
+        }
+        return _ioBatchReadInternalHook.OriginalFunction(thisPtr, ioChunkIdPtr, ioReadOptionsPtr, priority);
+    }
+
+    private unsafe nuint IoStoreTocResurceReadImpl(nuint retStorage, nint tocFilePath, int readOptions, nuint outTocResource)
+    {
+        var path = Marshal.PtrToStringUni(tocFilePath);
+        if (!path.Contains("UnrealEssentials"))
+        {
+            Log($"Read TOC {path}");
+            _utocEmulator.CallGetTocFilenames(path, 3);
+        }
+        return _ioStoreTocResourceReadHook.OriginalFunction(retStorage, tocFilePath, readOptions, outTocResource);
     }
 
     #region Standard Overrides

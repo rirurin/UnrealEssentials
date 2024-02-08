@@ -18,7 +18,7 @@ pub type TocDirectorySyncRef = Arc<RwLock<TocDirectory>>;
 pub type TocFileSyncRef = Arc<RwLock<TocFile>>;
 
 pub const EMULATOR_NAME:                    &'static str = "UTOC";
-//pub const PROJECT_NAME:                     &'static str = "UnrealEssentials";
+pub const PROJECT_NAME:                     &'static str = "Game";
 
 pub static ROOT_DIRECTORY: Mutex<Option<TocDirectorySyncRef>> = Mutex::new(None);
 pub static ASSET_COLLECTOR_PROFILER: Mutex<Option<AssetCollectorProfiler>> = Mutex::new(None);
@@ -382,13 +382,6 @@ impl AssetCollectorProfilerModContents {
         println!("{} directories added", self.directory_count);
         println!("{} added files ({} KB)", self.added_files_count, self.added_files_size / 1024);
         println!("{} replaced files ({} KB)", self.replaced_files_count, self.replaced_files_size / 1024);
-        //if self.skipped_files.len() > 0 { has confiused a couple people, also was designed before loose pak and loose utoc files were unified
-        //    println!("{}", "-".repeat(80));
-        //    println!("SKIPPED FILES: {} FILES ({} KB)", self.skipped_files.len(), self.skipped_file_size / 1024);
-        //    for i in &self.skipped_files {
-        //        println!("File \"{}\", reason \"{}\"", i.os_path, i.reason);
-        //    }
-        //}
         if self.incorrect_asset_header.len() > 0 {
             println!("{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
             println!("INCORRECT ASSET FORMAT: {} FILES", self.incorrect_asset_header.len());
@@ -416,7 +409,6 @@ pub struct AssetCollectorProfilerMod {
 
 impl AssetCollectorProfilerMod {
     pub fn new(mod_id: &str, mod_path: &str) -> Self {
-        let modified_os_path = mod_path.split_once("C:\\Users");
         Self {
             uid: mod_id.to_owned(),
             os_path: mod_path.to_owned(),

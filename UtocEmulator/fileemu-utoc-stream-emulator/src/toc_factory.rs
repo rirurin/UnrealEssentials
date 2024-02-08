@@ -6,26 +6,22 @@ use std::{
     io, io::{BufReader, Cursor, Read, Seek, SeekFrom, Write},
     mem,
     pin::Pin,
-    //rc::{Rc, Weak},
     sync::{Arc, Mutex, MutexGuard, RwLock, Weak},
     time::Instant,
 };
 use crate::{
     asset_collector::{
-        MOUNT_POINT, SUITABLE_FILE_EXTENSIONS, ROOT_DIRECTORY, 
+        MOUNT_POINT, SUITABLE_FILE_EXTENSIONS, PROJECT_NAME, ROOT_DIRECTORY, 
         TocDirectory, TocDirectorySyncRef, TocFile, TocFileSyncRef},
     io_package::{
-        ContainerHeaderPackage,
-        ExportBundle, ExportBundleHeader4,
-        PackageIoSummaryDeserialize, 
-        PackageSummary2},
+        ContainerHeaderPackage, ExportBundle, ExportBundleHeader4,
+        PackageIoSummaryDeserialize, PackageSummary2
+    },
     io_toc::{
         IO_FILE_INDEX_ENTRY_SERIALIZED_SIZE,
-        ContainerHeader, 
-        IoChunkId, IoChunkType4, IoDirectoryIndexEntry, IoFileIndexEntry, 
-        IoStringPool, IoStoreTocEntryMeta, 
-        IoStoreTocHeaderCommon, IoStoreTocHeaderType2, IoStoreTocHeaderType3,
-        IoStoreTocCompressedBlockEntry, IoOffsetAndLength
+        ContainerHeader, IoChunkId, IoChunkType4, IoDirectoryIndexEntry, IoFileIndexEntry, IoStringPool, IoStoreTocEntryMeta, 
+        IoStoreTocHeaderCommon, IoStoreTocHeaderType2, IoStoreTocHeaderType3, IoStoreTocHeaderType4,
+        IoStoreTocCompressedBlockEntry, IoStoreTocVersion, IoOffsetAndLength
     },
     platform::Metadata,
     string::{FString32NoHash, FStringSerializer, FStringSerializerExpectedLength, Hasher, Hasher16}
@@ -55,7 +51,17 @@ pub fn build_table_of_contents(toc_path: &str, version: u32) -> Option<Vec<u8>> 
     if file_name == TARGET_TOC { // check that we're targeting the correct UTOC
         let root_dir_lock = ROOT_DIRECTORY.lock().unwrap();
         match (*root_dir_lock).as_ref() {
-            Some(root) => Some(build_table_of_contents_inner(Arc::clone(root), toc_path)),
+            Some(root) => {
+                match IoStoreTocVersion::from(version as u8) {
+                    IoStoreTocVersion::Initial => panic!("4.25 UTOC is not supported"),
+                    IoStoreTocVersion::DirectoryIndex => Some(build_table_of_contents_inner::<PackageSummary2, IoStoreTocHeaderType2>(Arc::clone(root), toc_path)),
+                    IoStoreTocVersion::PartitionSize => Some(build_table_of_contents_inner::<PackageSummary2, IoStoreTocHeaderType3>(Arc::clone(root), toc_path)),
+                    IoStoreTocVersion::PerfectHash | 
+                    IoStoreTocVersion::PerfectHashWithOverflow => panic!("UE 5 is not supported"),
+                    //IoStoreTocVersion::PerfectHashWithOverflow => Some(build_table_of_contents_inner::<PackageSummary2, IoStoreTocHeaderType4>(Arc::clone(root), toc_path)),
+                    IoStoreTocVersion::Invalid => panic!("Got invalid version number")
+                }
+            }
             None => {
                 println!("WARNING: No mod files were loaded for {}", file_name);
                 None
@@ -65,28 +71,6 @@ pub fn build_table_of_contents(toc_path: &str, version: u32) -> Option<Vec<u8>> 
         None // Not our target TOC
     }
 }
-/* 
-pub fn build_container_test(cas_path: &str) {
-    use std::ffi::CStr;
-    use byteorder::WriteBytesExt;
-    let mut writer: Cursor<Vec<u8>> = Cursor::new(vec![]);
-
-    let container_data = unsafe { CONTAINER_DATA.as_ref().unwrap() };
-    for i in &container_data.virtual_blocks {
-        let file_name = unsafe { CStr::from_ptr(i.os_path as *const i8).to_str().unwrap() };
-        let vec = fs::read(file_name).unwrap();
-        println!("cursor at 0x{:x} for {}", writer.stream_position().unwrap(), file_name);
-        writer.write_all(&vec).unwrap();
-        let alignment = writer.stream_position().unwrap() as u32 % DEFAULT_COMPRESSION_BLOCK_ALIGNMENT;
-        if alignment > 0 {
-            let diff = DEFAULT_COMPRESSION_BLOCK_ALIGNMENT - alignment;
-            writer.seek(SeekFrom::Current(diff as i64));
-        }
-    }
-    writer.write_all(&container_data.header).unwrap();
-    fs::write(cas_path, &writer.into_inner()).unwrap();
-}
-*/
 
 // Creates a TOC + CAS given a list of loose directories and files
 // This currently only officially supports 4.25+, 4.26 and 4.27, but TocResolver is implemented in a way that will hopefully make adding support for new versions of
@@ -123,7 +107,6 @@ pub trait TocResolverCommon { // Currently for 4.25+, 4.26 and 4.27
         // remove Content from path
         let path_to_replace_split = file_path.split_once("/Content").unwrap();
         let path_to_replace = "/".to_owned() + path_to_replace_split.0 + path_to_replace_split.1;
-        println!("{}", path_to_replace);
         IoChunkId::new(&path_to_replace, chunk_type)
     }
 
@@ -182,8 +165,6 @@ pub struct TocResolverType2 { // Currently for 4.25+, 4.26 and 4.27
 }
 
 impl TocResolverCommon for TocResolverType2 {
-    //type TocHeaderType = IoStoreTocHeaderType2;
-    //type ContainerHeaderType = PackageSummary2;
     fn new<
         THeaderType: IoStoreTocHeaderCommon
     >(toc_name: &str, block_align: u32) -> impl TocResolverCommon {
@@ -196,7 +177,7 @@ impl TocResolverCommon for TocResolverType2 {
             compression_block_alignment: if block_align < 0x10 { 0x10 } else { block_align }, // 0x800 is default for UE 4.27 (isn't saved in toc), 0x0 is used for UE 4.26
             // every file is virtually put on an alignment of [compression_block_size] (in reality, they're only aligned to nearest 16 bytes)
             // offset section defines where each file's data starts, while compress blocks section defines each compression block
-            toc_name_hash: Hasher16::get_cityhash64("Game"), // used for container id (is also the last file in partition) (verified)
+            toc_name_hash: Hasher16::get_cityhash64(PROJECT_NAME), // used for container id (is also the last file in partition) (verified)
             chunk_ids: vec![],
             offsets_and_lengths: vec![],
             compression_blocks: vec![],
@@ -430,14 +411,16 @@ impl TocResolverType2 {
 // TODO: Pass version param (probably as trait) to customize how TOC is produced depenending on the target version
 // TODO: Support UE5 (sometime soon)
 
-pub fn build_table_of_contents_inner(root: TocDirectorySyncRef, toc_path: &str) -> Vec<u8> {
-    //println!("BUILD TABLE OF CONTENTS FOR {}", TARGET_TOC);
+pub fn build_table_of_contents_inner<
+    TSummary: PackageIoSummaryDeserialize,
+    TIoTocHeader: IoStoreTocHeaderCommon
+>(root: TocDirectorySyncRef, toc_path: &str) -> Vec<u8> {
     let mut profiler = TocBuilderProfiler::new();
     let mut resolver = TocResolverType2::new::<
-        IoStoreTocHeaderType2
+        TIoTocHeader
     >(TARGET_TOC, DEFAULT_COMPRESSION_BLOCK_ALIGNMENT);
     resolver.flatten_toc_tree(&mut TocFlattenTracker::new(), Arc::clone(&root));
-    let serialize_results = resolver.serialize::<PackageSummary2, IoStoreTocHeaderType3>(&mut profiler, toc_path);
+    let serialize_results = resolver.serialize::<TSummary, TIoTocHeader>(&mut profiler, toc_path);
     let mut container_lock = CONTAINER_DATA.lock().unwrap();
     *container_lock = Some(serialize_results.1);
     serialize_results.0

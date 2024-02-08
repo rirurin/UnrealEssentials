@@ -65,6 +65,7 @@ namespace UTOC.Stream.Emulator
         {
             stream = null;
             _pathToStream[path] = null; // Avoid recursion into the same file
+            /*
             if (FileAccessLog && !path.Contains(ModTargetFilesDirectory))
             {
                 //_logger.Info($"[UtocEmulator] File Access Log TODO for {path}");
@@ -72,6 +73,7 @@ namespace UTOC.Stream.Emulator
                 var names = (nint)0;
                 RustApi.GetTocFilenames(path, ref chunkIds, ref names);
             }
+            */
             if (!path.Contains(ModTargetFilesDirectory) || TocStream == null) return false;
             stream = TocStream;
             _pathToStream.TryAdd(path, stream);
