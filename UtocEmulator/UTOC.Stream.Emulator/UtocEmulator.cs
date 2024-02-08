@@ -30,10 +30,11 @@ namespace UTOC.Stream.Emulator
         private string ModTargetFilesDirectory { get; init; }
         private string ModDummyPakFilesDirectory { get; init; }
         public Action<string> AddPakFolderCb { get; set; }
+        public bool FileAccessLog { get; }
 
         private readonly ConcurrentDictionary<string, Strim?> _pathToStream = new(StringComparer.OrdinalIgnoreCase);
 
-        public UtocEmulator(Logger logger, bool canDump, string modPath, Action<string> addPakFolderCb) 
+        public UtocEmulator(Logger logger, bool canDump, string modPath, bool bFileAccessLog, Action<string> addPakFolderCb) 
         { 
             _logger = logger; 
             DumpFiles = canDump;
@@ -41,6 +42,7 @@ namespace UTOC.Stream.Emulator
             ModTargetFilesDirectory = Path.Combine(ModPath, Constants.TargetDir);
             ModDummyPakFilesDirectory = Path.Combine(ModPath, Constants.DummyPakDir);
             AddPakFolderCb = addPakFolderCb;
+            FileAccessLog = bFileAccessLog;
         }
 
         public bool TryCreateFile(IntPtr handle, string filepath, string route, out IEmulatedFile emulated)
@@ -59,10 +61,17 @@ namespace UTOC.Stream.Emulator
             if (!TryCreateEmulatedFile(handle, filepath, filepath, filepath, ref emulated!, out _)) return false;
             return true;
         }
-        public bool TryCreateIoStoreTOC(string path, ref IEmulatedFile? emulated, out Strim? stream)
+        public bool TryCreateIoStoreTOC(IntPtr handle, string path, ref IEmulatedFile? emulated, out Strim? stream)
         {
             stream = null;
             _pathToStream[path] = null; // Avoid recursion into the same file
+            if (FileAccessLog && !path.Contains(ModTargetFilesDirectory))
+            {
+                //_logger.Info($"[UtocEmulator] File Access Log TODO for {path}");
+                var chunkIds = (nint)0;
+                var names = (nint)0;
+                RustApi.GetTocFilenames(path, ref chunkIds, ref names);
+            }
             if (!path.Contains(ModTargetFilesDirectory) || TocStream == null) return false;
             stream = TocStream;
             _pathToStream.TryAdd(path, stream);
@@ -159,7 +168,7 @@ namespace UTOC.Stream.Emulator
             string? ext = Path.GetExtension(srcDataPath);
             if (srcDataPath.EndsWith(Constants.UtocExtension, StringComparison.OrdinalIgnoreCase))
             {
-                if (TryCreateIoStoreTOC(srcDataPath, ref emulated!, out _)) return true;
+                if (TryCreateIoStoreTOC(handle, srcDataPath, ref emulated!, out _)) return true;
             }
             else if (srcDataPath.EndsWith(Constants.UcasExtension, StringComparison.OrdinalIgnoreCase))
             {

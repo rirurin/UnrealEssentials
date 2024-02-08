@@ -17,19 +17,6 @@ pub unsafe extern "C" fn AddFromFolders(modId: *const c_char, modPath: *const c_
 #[no_mangle]
 #[allow(non_snake_case)]
 // haiiii Reloaded!!!! :3
-pub unsafe extern "C" fn BuildTableOfContents(tocPath: *const c_char, settings: *const u32, settings_length: u32, length: *mut u64) -> *const u8 {
-    match toc_factory::build_table_of_contents(CStr::from_ptr(tocPath).to_str().unwrap(), 0) {
-        Some(n) => {
-            *length = n.len() as u64; // set length parameter
-            n.leak().as_ptr() // leak memory lol
-        },
-        None => 0 as *const u8 // couldn't build toc, let C# side know with a null pointer
-    }
-}
-
-#[no_mangle]
-#[allow(non_snake_case)]
-// haiiii Reloaded!!!! :3
 pub unsafe extern "C" fn BuildTableOfContentsEx(
     // UTOC
     basePath: *const c_char,
@@ -69,32 +56,18 @@ pub unsafe extern "C" fn BuildTableOfContentsEx(
     }
 }
 
-
-#[no_mangle]
-#[allow(non_snake_case)]
-pub unsafe extern "C" fn GetContainerBlocks(
-    casPath: *const c_char, 
-    blocks: *mut *const PartitionBlock, blockCount: *mut usize, 
-    header: *mut *const u8, headerSize: *mut usize
-) -> bool {
-    false
-    /* 
-    let block_managed = toc_factory::get_virtual_partition(CStr::from_ptr(casPath).to_str().unwrap());
-    match block_managed {
-        Some(n) => {
-            *blockCount = n.0.len(); // container blocks
-            *blocks = n.0.as_ptr();
-            *headerSize = n.1.len(); // container header
-            *header = n.1.as_ptr();
-            true
-        },
-        None => false
-    }
-    */
-}
-
 #[no_mangle]
 #[allow(non_snake_case)]
 pub unsafe extern "C" fn PrintAssetCollectorResults() {
     asset_collector::print_asset_collector_results();
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn GetTocFilenames(tocPath: *const c_char, chunkIds: *mut *const u8, names: *mut *const u8) -> bool {
+    let filename = CStr::from_ptr(tocPath).to_str().unwrap();
+    // this gets called when the target TOC already has an open file handle made by Win32
+    // all we need to get the info needed for filenames is to read header and directory index
+    println!("UTOC Emulator File Access TODO for {}", filename);
+    false
 }

@@ -25,7 +25,6 @@ pub static ASSET_COLLECTOR_PROFILER: Mutex<Option<AssetCollectorProfiler>> = Mut
 
 // Create tree of assets that can be used to build a TOC
 pub fn add_from_folders(mod_id: &str, mod_path: &str) {
-    println!("add from folders: {}, {}", mod_id, mod_path);
     // mod loading happens synchronously, safe to unwrap
     let mut profiler_lock = ASSET_COLLECTOR_PROFILER.lock().unwrap();
     if *profiler_lock == None { // Check profiler is active
@@ -233,7 +232,7 @@ pub const SUITABLE_FILE_EXTENSIONS: &'static [&'static str] = ["uasset", "ubulk"
 pub const MOUNT_POINT: &'static str = "../../../";
 pub const GAME_ROOT: &'static str = "Game";
 
-pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, profiler: &mut AssetCollectorProfilerModContents, mut first: bool) {
+pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, profiler: &mut AssetCollectorProfilerModContents, first: bool) {
     // We've already checked that this path exists in AddFromFolders, so unwrap directly
     // This folder is equivalent to /[ProjectName]/Content, so our mount point will be
     // at least ../../../[ProjectName] (../../../Game/)
@@ -255,7 +254,6 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
                             // Set the root directory to Game if it isn't engine so people can use the game name (assuming only Engine and Game)
                             if first && name != "Engine"
                             {
-                                first = false;
                                 println!("Setting root directory {} to Game", name);
                                 name = GAME_ROOT.to_string();
                             }
@@ -379,17 +377,18 @@ impl AssetCollectorProfilerModContents {
     }
 
     pub fn print(&self) {
-        println!("Created tree in {} ms", self.time_to_tree as f64 / 1000f64);
+        #[cfg(feature = "report_tree_time")]
+        println!("Created tree in {} ms", self.time_to_tree as f64 / 1024f64); // this single line makes the binary 18 KB larger lol
         println!("{} directories added", self.directory_count);
         println!("{} added files ({} KB)", self.added_files_count, self.added_files_size / 1024);
         println!("{} replaced files ({} KB)", self.replaced_files_count, self.replaced_files_size / 1024);
-        if self.skipped_files.len() > 0 {
-            println!("{}", "-".repeat(80));
-            println!("SKIPPED FILES: {} FILES ({} KB)", self.skipped_files.len(), self.skipped_file_size / 1024);
-            for i in &self.skipped_files {
-                println!("File \"{}\", reason \"{}\"", i.os_path, i.reason);
-            }
-        }
+        //if self.skipped_files.len() > 0 { has confiused a couple people, also was designed before loose pak and loose utoc files were unified
+        //    println!("{}", "-".repeat(80));
+        //    println!("SKIPPED FILES: {} FILES ({} KB)", self.skipped_files.len(), self.skipped_file_size / 1024);
+        //    for i in &self.skipped_files {
+        //        println!("File \"{}\", reason \"{}\"", i.os_path, i.reason);
+        //    }
+        //}
         if self.incorrect_asset_header.len() > 0 {
             println!("{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
             println!("INCORRECT ASSET FORMAT: {} FILES", self.incorrect_asset_header.len());

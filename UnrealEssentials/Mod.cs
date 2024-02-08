@@ -95,7 +95,7 @@ public unsafe class Mod : ModBase // <= Do not Remove.
         _hasUtocs = DoesGameUseUtocs(sigs);
 
         _modLoader.GetController<IUtocEmulator>().TryGetTarget(out _utocEmulator);
-        _utocEmulator.Initialise(sigs.TocVersion, sigs.PakVersion, sigs.FileIoStoreOpenContainer, sigs.ReadBlocks, AddPakFolder, RemovePakFolder);
+        _utocEmulator.Initialise(sigs.TocVersion, sigs.PakVersion, sigs.FileIoStoreOpenContainer, sigs.ReadBlocks, _configuration.FileAccessLog, AddPakFolder, RemovePakFolder);
 
         InitialiseGMalloc(sigs.GMalloc, _hooks);
 

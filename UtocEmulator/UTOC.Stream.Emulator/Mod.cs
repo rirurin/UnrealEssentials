@@ -59,6 +59,7 @@ namespace UTOC.Stream.Emulator
         private IHook<FFileIoStore_ReadBlocks> _readBlocksHook;
 
         private IUtocEmulator _api;
+        private bool FileAccessLogEnabled;
 
         public Mod(ModContext context) 
         {
@@ -77,11 +78,13 @@ namespace UTOC.Stream.Emulator
             _modLoader.AddOrReplaceController(context.Owner, _api);
         }
 
-        public void Initialise(TocType? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
+        public void Initialise(TocType? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, bool bFileAccessLogEnabled, Action<string> addPakFolder, Action<string> removePakFolder)
         {
             _log.Info("Starting UTOC.Stream.Emulator");
             _emu = new UtocEmulator(
-                _log, _configuration.DumpFiles, _modLoader.GetDirectoryForModId(_modConfig.ModId), addPakFolder);
+                _log, _configuration.DumpFiles, _modLoader.GetDirectoryForModId(_modConfig.ModId), 
+                bFileAccessLogEnabled, addPakFolder
+            );
 
             _modLoader.ModLoading += OnModLoading;
             _modLoader.OnModLoaderInitialized += OnLoaderInit;

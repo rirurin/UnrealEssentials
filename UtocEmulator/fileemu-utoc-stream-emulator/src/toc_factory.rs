@@ -125,18 +125,6 @@ pub trait TocResolverCommon { // Currently for 4.25+, 4.26 and 4.27
         let path_to_replace = "/".to_owned() + path_to_replace_split.0 + path_to_replace_split.1;
         println!("{}", path_to_replace);
         IoChunkId::new(&path_to_replace, chunk_type)
-        /* 
-        // replace [BaseDirectory]/Content with /Game/
-        //let path_to_replace = PROJECT_NAME.to_owned() + "/Content";
-        let path_to_replace =  "Game/Content";
-        if let Some((_, suffix)) = file_path.to_owned().split_once(&path_to_replace) {
-            let path_to_hash = String::from("/Game") + suffix;
-            println!("{}", path_to_hash);
-            IoChunkId::new(&path_to_hash, chunk_type)
-        } else {
-            panic!("Path \"{}\" is missing root containing project name + content. Path components were not handled properly", file_path);
-        }
-        */
     }
 
     fn get_file_hash(&self, curr_file: &IoFileIndexEntry) -> IoChunkId {
@@ -518,7 +506,10 @@ impl TocBuilderProfiler {
     }
     fn display_results(&self) {
         // TODO: Advanced display results
-        println!("Flatten Time: {} ms", self.time_to_flatten as f64 / 1000f64);
-        println!("Serialize Time: {} ms", self.time_to_serialize as f64 / 1000f64);
+        #[cfg(feature = "report_tree_time")]
+        {
+            println!("Flatten Time: {} ms", self.time_to_flatten as f64 / 1000f64);
+            println!("Serialize Time: {} ms", self.time_to_serialize as f64 / 1000f64);
+        }
     }
 }

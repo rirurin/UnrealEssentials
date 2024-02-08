@@ -74,6 +74,7 @@ pub const IO_STORE_TOC_MAGIC: [u8; 0x10] = *b"-==--==--==--==-";
 
 pub trait IoStoreTocHeaderCommon {
     fn new(container_id: u64, entries: u32, compressed_blocks: u32, compression_block_size: u32, dir_index_size: u32) -> impl IoStoreTocHeaderCommon;
+    fn from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(reader: &mut R) -> Result<impl IoStoreTocHeaderCommon, Box<dyn Error>>;
     fn to_buffer<W: Write + Seek, E: byteorder::ByteOrder>(&self, writer: &mut W) -> Result<(), Box<dyn Error>>;
 }
 
@@ -162,6 +163,40 @@ impl IoStoreTocHeaderCommon for IoStoreTocHeaderType2 {
         }
         Ok(())
     }
+
+    fn from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(reader: &mut R) -> Result<impl IoStoreTocHeaderCommon, Box<dyn Error>> {
+        reader.seek(SeekFrom::Current(0x10)); // skip magic, it's probably good
+        let version = IoStoreTocVersion::from(reader.read_u8()?);
+        reader.seek(SeekFrom::Current(0x3));
+        let toc_header_size = reader.read_u32::<E>()?;
+        let toc_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_size = reader.read_u32::<E>()?;
+        let compression_method_name_count = reader.read_u32::<E>()?;
+        let compression_method_name_length = reader.read_u32::<E>()?;
+        let compression_block_size = reader.read_u32::<E>()?;
+        let directory_index_size = reader.read_u32::<E>()?;
+        reader.seek(SeekFrom::Current(0x4));
+        let container_id = reader.read_u64::<E>()?;
+        let encryption_key_guid = reader.read_u128::<E>()?;
+        let container_flags = IoContainerFlags::from_bits(reader.read_u8()?).unwrap();
+        Ok(Self {
+            toc_magic: IO_STORE_TOC_MAGIC,
+            version,
+            toc_header_size,
+            toc_entry_count,
+            toc_compressed_block_entry_count,
+            toc_compressed_block_entry_size,
+            compression_method_name_count,
+            compression_method_name_length,
+            compression_block_size,
+            directory_index_size,
+            container_id,
+            encryption_key_guid,
+            container_flags,
+            reserved: [0; 15]
+        })
+    }
 }
 
 #[repr(C)]
@@ -229,6 +264,44 @@ impl IoStoreTocHeaderCommon for IoStoreTocHeaderType3 {
         }
         Ok(())
     }
+
+    fn from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(reader: &mut R) -> Result<impl IoStoreTocHeaderCommon, Box<dyn Error>> {
+        reader.seek(SeekFrom::Current(0x10)); // skip magic, it's probably good
+        let version = IoStoreTocVersion::from(reader.read_u8()?);
+        reader.seek(SeekFrom::Current(0x3));
+        let toc_header_size = reader.read_u32::<E>()?;
+        let toc_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_size = reader.read_u32::<E>()?;
+        let compression_method_name_count = reader.read_u32::<E>()?;
+        let compression_method_name_length = reader.read_u32::<E>()?;
+        let compression_block_size = reader.read_u32::<E>()?;
+        let directory_index_size = reader.read_u32::<E>()?;
+        let partition_count = reader.read_u32::<E>()?;
+        let container_id = reader.read_u64::<E>()?;
+        let encryption_key_guid = reader.read_u128::<E>()?;
+        let container_flags = IoContainerFlags::from_bits(reader.read_u8()?).unwrap();
+        reader.seek(SeekFrom::Current(0x7));
+        let partition_size = reader.read_u64::<E>()?;
+        Ok(Self {
+            toc_magic: IO_STORE_TOC_MAGIC,
+            version,
+            toc_header_size,
+            toc_entry_count,
+            toc_compressed_block_entry_count,
+            toc_compressed_block_entry_size,
+            compression_method_name_count,
+            compression_method_name_length,
+            compression_block_size,
+            directory_index_size,
+            partition_count,
+            container_id,
+            encryption_key_guid,
+            container_flags,
+            partition_size,
+            reserved: [0; 6]
+        })
+    }
 }
 
 #[repr(C)]
@@ -251,6 +324,99 @@ pub struct IoStoreTocHeaderType4 { // Unreal Engine 5.0+ (size: 0x90)
     partition_size: u64,
     toc_chunks_without_perfect_hash_count: u32,
     reserved: [u32; 11]
+}
+
+impl IoStoreTocHeaderCommon for IoStoreTocHeaderType4 {
+    fn new(container_id: u64, entries: u32, compressed_blocks: u32, compression_block_size: u32, dir_index_size: u32) -> impl IoStoreTocHeaderCommon {
+        Self {
+            toc_magic: IO_STORE_TOC_MAGIC,
+            version: IoStoreTocVersion::PerfectHashWithOverflow,
+            toc_header_size: std::mem::size_of::<Self>() as u32,
+            toc_entry_count: entries,
+            toc_compressed_block_entry_count: compressed_blocks,
+            toc_compressed_block_entry_size: std::mem::size_of::<IoStoreTocCompressedBlockEntry>() as u32, // for sanity checking
+            compression_method_name_count: 0,
+            compression_method_name_length: 32,
+            compression_block_size,
+            directory_index_size: dir_index_size,
+            partition_count: 1,
+            container_id,
+            encryption_key_guid: 0,
+            container_flags: IoContainerFlags::Indexed,
+            toc_chunks_perfect_hash_seeds_count: 0,
+            partition_size: u64::MAX,
+            toc_chunks_without_perfect_hash_count: 0,
+            reserved: [0; 11]
+        }
+    }
+
+    fn to_buffer<W: Write + Seek, E: byteorder::ByteOrder>(&self, writer: &mut W) -> Result<(), Box<dyn Error>> {
+        writer.write_all(self.toc_magic.as_slice())?; // 0x0
+        writer.write_u8(self.version.into())?;
+        writer.write_u24::<E>(0)?; // padding
+        writer.write_u32::<E>(self.toc_header_size);
+        writer.write_u32::<E>(self.toc_entry_count);
+        writer.write_u32::<E>(self.toc_compressed_block_entry_count);
+        writer.write_u32::<E>(self.toc_compressed_block_entry_size);
+        writer.write_u32::<E>(self.compression_method_name_count);
+        writer.write_u32::<E>(self.compression_method_name_length);
+        writer.write_u32::<E>(self.compression_block_size);
+        writer.write_u32::<E>(self.directory_index_size);
+        writer.write_u32::<E>(self.partition_count);
+        writer.write_u64::<E>(self.container_id);
+        writer.write_u128::<E>(self.encryption_key_guid);
+        writer.write_u8(self.container_flags.bits());
+        writer.write_u24::<E>(0)?; // padding
+        writer.write_u32::<E>(self.toc_chunks_perfect_hash_seeds_count)?;
+        writer.write_u64::<E>(self.partition_size)?;
+        writer.write_u32::<E>(self.toc_chunks_without_perfect_hash_count)?;
+        for _ in 0..11 {
+            writer.write_u32::<E>(0)?; // padding
+        }
+        Ok(())
+    }
+
+    fn from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(reader: &mut R) -> Result<impl IoStoreTocHeaderCommon, Box<dyn Error>> {
+        reader.seek(SeekFrom::Current(0x10)); // skip magic, it's probably good
+        let version = IoStoreTocVersion::from(reader.read_u8()?);
+        reader.seek(SeekFrom::Current(0x3));
+        let toc_header_size = reader.read_u32::<E>()?;
+        let toc_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_count = reader.read_u32::<E>()?;
+        let toc_compressed_block_entry_size = reader.read_u32::<E>()?;
+        let compression_method_name_count = reader.read_u32::<E>()?;
+        let compression_method_name_length = reader.read_u32::<E>()?;
+        let compression_block_size = reader.read_u32::<E>()?;
+        let directory_index_size = reader.read_u32::<E>()?;
+        let partition_count = reader.read_u32::<E>()?;
+        let container_id = reader.read_u64::<E>()?;
+        let encryption_key_guid = reader.read_u128::<E>()?;
+        let container_flags = IoContainerFlags::from_bits(reader.read_u8()?).unwrap();
+        reader.seek(SeekFrom::Current(0x3));
+        let toc_chunks_perfect_hash_seeds_count = reader.read_u32::<E>()?;
+        let partition_size = reader.read_u64::<E>()?;
+        let toc_chunks_without_perfect_hash_count = reader.read_u32::<E>()?;
+        Ok(Self {
+            toc_magic: IO_STORE_TOC_MAGIC,
+            version,
+            toc_header_size,
+            toc_entry_count,
+            toc_compressed_block_entry_count,
+            toc_compressed_block_entry_size,
+            compression_method_name_count,
+            compression_method_name_length,
+            compression_block_size,
+            directory_index_size,
+            partition_count,
+            container_id,
+            encryption_key_guid,
+            container_flags,
+            toc_chunks_perfect_hash_seeds_count,
+            partition_size,
+            toc_chunks_without_perfect_hash_count,
+            reserved: [0; 11]
+        })
+    }
 }
 
 // IO CHUNK ID
@@ -419,6 +585,21 @@ impl IoChunkId {
         }
         Ok(())
     }
+    pub fn from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(reader: &mut R) -> Result<IoChunkId, Box<dyn Error>> {
+        let hash = reader.read_u64::<E>()?;
+        let index = reader.read_u16::<E>()?;
+        reader.seek(SeekFrom::Current(0x1));
+        let obj_type = IoChunkType4::from(reader.read_u8()?);
+        Ok(Self { hash, index, obj_type })
+    }
+    pub fn list_from_buffer<R: Read + Seek, E: byteorder::ByteOrder>(count: usize, reader: &mut R) -> Result<Vec<IoChunkId>, Box<dyn Error>> {
+        let mut chunks = Vec::with_capacity(count);
+        for _ in 0..count {
+            let new_chunk = IoChunkId::from_buffer::<R, E>(reader)?;
+            chunks.push(new_chunk);
+        }
+        Ok(chunks)
+    }
     pub fn get_raw_hash(&self) -> u64 {
         self.hash
     }
@@ -496,6 +677,7 @@ impl IoStoreTocCompressedBlockEntry {
 
 // (usually, compression info and signature data would be included here, but we have no reason to
 // do that to our emulated UTOC, so no need to define those types)
+// (edit: will in a future update to support compressed loose assets)
 
 // IO Directory Index
 
@@ -657,7 +839,6 @@ impl ContainerHeader {
         for i in &self.packages {
             container_header_writer.write_u64::<E>(i.hash)?;
         }
-        //println!("Written {} package ids into container header", self.packages.len());
         let import_list_base_offset = crate::io_package::CONTAINER_HEADER_PACKAGE_SERIALIZED_SIZE * self.packages.len() as u64; // TArray->data, len is written further down
         let mut import_list_already_written_offset = 0;
         let mut store_entry_writer: Cursor<Vec<u8>> = Cursor::new(vec![]);
@@ -671,9 +852,6 @@ impl ContainerHeader {
         container_header_writer.write_u32::<E>(0)?; // PackageRedirectss
         let serialized = container_header_writer.into_inner();
         writer.write_all(&serialized); // Write into main buffer, then align to the nearest 0x10
-        //PartitionSerializer::new(0x10).to_buffer_alignment::<W, E>(writer);
-        //writer.seek(SeekFrom::Current(-1));
-        //writer.write(&[0x0])?;
         Ok(serialized)
     }
 }
