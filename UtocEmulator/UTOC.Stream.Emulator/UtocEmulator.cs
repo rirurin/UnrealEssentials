@@ -227,10 +227,12 @@ namespace UTOC.Stream.Emulator
             nint blockCount = 0;
             nint headerPtr = 0;
             nint headerSize = 0;
+            nint modTargetFilesDirectoryUnicode = Marshal.StringToHGlobalUni(ModTargetFilesDirectory);
             var result = RustApi.BuildTableOfContentsEx(
-                ModTargetFilesDirectory, (uint)TocVersion, ref tocData, ref tocLength,
+                modTargetFilesDirectoryUnicode, ModTargetFilesDirectory.Length, (uint)TocVersion, ref tocData, ref tocLength,
                 ref blockPtr, ref blockCount, ref headerPtr, ref headerSize
             );
+            Marshal.FreeHGlobal(modTargetFilesDirectoryUnicode);
             if (!result)
             {
                 _logger.Info($"[UtocEmulator] An error occurred while making IO Store data");
