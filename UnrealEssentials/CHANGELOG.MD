@@ -1,4 +1,7 @@
 # Unreal Essentials Changelog
+## 1.2.0
+- Added IUnrealMemory to the API to help working with memory using the native UE allocator (@TheBestAstroNOT)
+
 ## 1.1.5
 - Added support for The Callisto Protocol
 
