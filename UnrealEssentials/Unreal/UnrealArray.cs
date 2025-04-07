@@ -29,7 +29,7 @@ internal unsafe class UnrealArray
 
         internal void Resize(int newCapcity)
         {
-            Values = (T*)Realloc(Values, (nuint)(sizeof(T) * newCapcity));
+            Values = (T*)Mod.Memory.Realloc((nuint)Values, (nuint)(sizeof(T) * newCapcity));
             Capacity = newCapcity;
         }
 

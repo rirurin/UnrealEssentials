@@ -16,6 +16,7 @@ using Reloaded.Memory.Sigscan.Definitions;
 using UTOC.Stream.Emulator.Interfaces;
 using Reloaded.Mod.Interfaces.Structs.Enums;
 using UnrealEssentials.Interfaces;
+using UnrealEssentials.Unreal;
 
 namespace UnrealEssentials;
 /// <summary>
@@ -72,6 +73,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     private bool _hasUtocs;
 
     private IUnrealEssentials _api;
+    internal static IUnrealMemory Memory;
 
     public Mod(ModContext context)
     {
@@ -102,7 +104,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _modLoader.GetController<IUtocEmulator>().TryGetTarget(out _utocEmulator);
         _utocEmulator.Initialise(sigs.TocVersion, sigs.PakVersion, sigs.FileIoStoreOpenContainer, sigs.ReadBlocks, AddPakFolder, RemovePakFolder);
 
-        InitialiseGMalloc(sigs.GMalloc, _hooks);
+        Memory = new UnrealMemory(sigs.GMalloc, _hooks);
 
         // Remove utoc signing
         SigScan(sigs.GetPakSigningKeys, "GetSigningKeysPtr", address =>

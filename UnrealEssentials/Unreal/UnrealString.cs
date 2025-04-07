@@ -18,7 +18,7 @@ internal unsafe class UnrealString
             Data.Capacity = str.Length;
             Data.Length = Data.Capacity;
 
-            char* chars = (char*)Malloc((nuint)Data.Length * sizeof(char));
+            char* chars = (char*)Mod.Memory.Malloc((nuint)Data.Length * sizeof(char));
             for (int i = 0; i < str.Length; i++)
                 chars[i] = str[i];
             Data.Values = chars;

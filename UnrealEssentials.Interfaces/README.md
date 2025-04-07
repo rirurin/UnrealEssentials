@@ -1,6 +1,8 @@
 # Unreal Essentials API
 Using the Unreal Essentials API you can change what files are loaded from your mod using C# code. The main use case for this is adding configuration to mods.
 
+Additionally, you can manage memory using some of Unreal Engine's native functions. This may be useful for some code mods as Unreal Engine often doesn't play nice with memory allocated through other methods.
+
 ## Setting Up
 Firstly you will need a Reloaded code mod. If you've not set one up before you can follow Reloaded's [documentation](https://reloaded-project.github.io/Reloaded-II/DevelopmentEnvironmentSetup/) to do so.
 
@@ -58,7 +60,7 @@ if (unrealEssentialsController == null || !unrealEssentialsController.TryGetTarg
 You will want to put this underneath the `// TODO: Implement some mod logic` comment in the constructor in `Mod.cs` so it is run when your mod loads.
 
 ## Adding Files From Code
-The only thing the API currently can do is add files to be loaded by UnrealEssentials. To do so you use the `AddFromFolder` method of the `IUnrealEssentials` object you got using the above code.
+To add files to be loaded by UnrealEssentials, use the `AddFromFolder` method of the `IUnrealEssentials` object you got using the above code.
 
 For example, to add files from a folder called `TestFolder` in your mod the code would look like:
 
@@ -71,3 +73,22 @@ unrealEssentials.AddFromFolder(filesPath);
 An important part to note is the need for getting the path to your mod's folder using `_modLoader.GetDirectoryForModId(_modConfig.ModId);`. If you do not do this Unreal Essentials will look for files relative to the game's executable instead of your mod.
 
 This folder will essentially be treated as if it were the `UnrealEssentials` folder in the root of your mod so you would format files the same way. In the case of the `TestFolder` example you'd have files like `TestFolder\Game\Content\...`.
+
+## Memory Management
+To manage memory using the native Unreal Engine functions, use the methods in the `IUnrealMemory` object that you can get from the `GetMemory` method of an `IUnrealEssentials` object. 
+
+The supported methods currently include:
+- `Malloc`
+- `TryMalloc`
+- `Realloc`
+- `TryRealloc`
+- `Free`
+- `GetAllocationSize`
+
+For example, to allocate some memory using the global Unreal Engine allocator, you could have code like:
+
+```cs
+var memory = unrealEssentials.GetMemory();
+var allocatedMem = memory.Malloc(32);
+// Do stuff with your memory :)
+```

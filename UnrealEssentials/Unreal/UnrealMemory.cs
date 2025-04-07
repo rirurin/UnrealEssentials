@@ -1,34 +1,35 @@
 ﻿using Reloaded.Hooks.Definitions;
 using System.Runtime.InteropServices;
+using UnrealEssentials.Interfaces;
 using static UnrealEssentials.Utils;
 
 namespace UnrealEssentials.Unreal;
-internal unsafe class UnrealMemory
+public unsafe class UnrealMemory : IUnrealMemory
 {
-    private static FMalloc** _gMalloc;
-    private static IReloadedHooks _hooks;
+    private FMalloc** _gMalloc;
+    private IReloadedHooks _hooks;
 
     // FMalloc Functions
-    private static MallocDelegate? _malloc;
-    private static TryMallocDelegate? _tryMalloc;
-    private static ReallocDelegate? _realloc;
-    private static TryReallocDelegate? _tryRealloc;
-    private static FreeDelegate? _free;
-    private static QuantizeSizeDelegate? _quantizeSize;
-    private static GetAllocationSizeDelegate? _getAllocationSize;
-    private static TrimDelegate? _trim;
+    private MallocDelegate? _malloc;
+    private TryMallocDelegate? _tryMalloc;
+    private ReallocDelegate? _realloc;
+    private TryReallocDelegate? _tryRealloc;
+    private FreeDelegate? _free;
+    private QuantizeSizeDelegate? _quantizeSize;
+    private GetAllocationSizeDelegate? _getAllocationSize;
+    private TrimDelegate? _trim;
 
-    internal static void InitialiseGMalloc(string sig, IReloadedHooks hooks)
+    internal UnrealMemory(string gMallocSig, IReloadedHooks hooks)
     {
         _hooks = hooks;
-        SigScan(sig, "GMallocPtr", address =>
+        SigScan(gMallocSig, "GMallocPtr", address =>
         {
             _gMalloc = (FMalloc**)GetGlobalAddress(address + 3);
             LogDebug($"Found GMalloc at 0x{(nuint)_gMalloc:X}");
         });
     }
 
-    private static void SetupWrappers()
+    private void SetupWrappers()
     {
         // We shouldn't do allocation stuff before the game's setup
         // If we actually need to at some point we'll need to make GMalloc ourselves by hooking FMemory::GCreateMalloc
@@ -49,63 +50,67 @@ internal unsafe class UnrealMemory
     }
 
     // Wrappers for GMalloc functions
-    internal static void* Malloc(nuint Count, uint Alignment = DEFAULT_ALIGNMENT)
+    public nuint Malloc(nuint count, uint alignment = DEFAULT_ALIGNMENT)
     {
         if (_malloc == null)
             SetupWrappers();
 
-        return _malloc!(*_gMalloc, Count, Alignment);
+        return _malloc!(*_gMalloc, count, alignment);
     }
 
-    internal static void* TryMalloc(nuint Count, uint Alignment = DEFAULT_ALIGNMENT)
+    public nuint TryMalloc(nuint count, uint alignment = DEFAULT_ALIGNMENT)
     {
         if (_tryMalloc == null)
             SetupWrappers();
 
-        return _tryMalloc!(*_gMalloc, Count, Alignment);
+        return _tryMalloc!(*_gMalloc, count, alignment);
     }
 
-    internal static void* Realloc(void* Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT)
+    public nuint Realloc(nuint original, nuint count, uint alignment = DEFAULT_ALIGNMENT)
     {
         if (_realloc == null)
             SetupWrappers();
 
-        return _realloc!(*_gMalloc, Original, Count, Alignment);
+        return _realloc!(*_gMalloc, original, count, alignment);
     }
 
-    internal static void* TryRealloc(void* Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT)
+    public nuint TryRealloc(nuint original, nuint count, uint alignment = DEFAULT_ALIGNMENT)
     {
         if (_tryRealloc == null)
             SetupWrappers();
 
-        return _tryRealloc!(*_gMalloc, Original, Count, Alignment);
+        return _tryRealloc!(*_gMalloc, original, count, alignment);
     }
 
-    internal static void Free(void* Original)
+    public void Free(nuint original)
     {
         if (_free == null)
             SetupWrappers();
 
-        _free!(*_gMalloc, Original);
+        _free!(*_gMalloc, original);
     }
 
-    internal static nuint QuantizeSize(nuint Count, uint Alignment)
+    internal nuint QuantizeSize(nuint count, uint alignment)
     {
         if (_quantizeSize == null)
             SetupWrappers();
 
-        return _quantizeSize!(*_gMalloc, Count, Alignment);
+        return _quantizeSize!(*_gMalloc, count, alignment);
     }
 
-    internal static bool GetAllocationSize(void* Original, nuint* SizeOut)
+    public bool GetAllocationSize(nuint original, out nuint size)
     {
         if (_getAllocationSize == null)
             SetupWrappers();
 
-        return _getAllocationSize!(*_gMalloc, Original, SizeOut);
+        size = 0;
+        fixed (nuint* sizePtr = &size )
+        {   
+            return _getAllocationSize!(*_gMalloc, original, sizePtr);
+        }
     }
 
-    internal static void Trim(bool bTrimThreadCaches)
+    internal void Trim(bool bTrimThreadCaches)
     {
         if (_trim == null)
             SetupWrappers();
@@ -113,7 +118,7 @@ internal unsafe class UnrealMemory
         _trim!(*_gMalloc, bTrimThreadCaches);
     }
 
-    // Structur definitions
+    // Structure definitions
     internal struct FMalloc
     {
         internal FMallocVTable* VTable;
@@ -137,13 +142,13 @@ internal unsafe class UnrealMemory
     // Memory Delegates
     private const int DEFAULT_ALIGNMENT = 0;
 
-    internal delegate void* MallocDelegate(FMalloc* gMalloc, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
-    internal delegate void* TryMallocDelegate(FMalloc* gMalloc, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
-    internal delegate void* ReallocDelegate(FMalloc* gMalloc, void* Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
-    internal delegate void* TryReallocDelegate(FMalloc* gMalloc, void* Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
-    internal delegate void FreeDelegate(FMalloc* gMalloc, void* Original);
+    internal delegate nuint MallocDelegate(FMalloc* gMalloc, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
+    internal delegate nuint TryMallocDelegate(FMalloc* gMalloc, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
+    internal delegate nuint ReallocDelegate(FMalloc* gMalloc, nuint Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
+    internal delegate nuint TryReallocDelegate(FMalloc* gMalloc, nuint Original, nuint Count, uint Alignment = DEFAULT_ALIGNMENT);
+    internal delegate void FreeDelegate(FMalloc* gMalloc, nuint Original);
     internal delegate nuint QuantizeSizeDelegate(FMalloc* gMalloc, nuint Count, uint Alignment);
-    internal delegate bool GetAllocationSizeDelegate(FMalloc* gMalloc, void* Original, nuint* SizeOut);
+    internal delegate bool GetAllocationSizeDelegate(FMalloc* gMalloc, nuint Original, nuint* SizeOut);
     internal delegate void TrimDelegate(FMalloc* gMalloc, bool bTrimThreadCaches);
 
     // We really don't need any of these, leaving as a comment in case there's a use in the future (I doubt it)
