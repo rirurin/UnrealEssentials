@@ -151,7 +151,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _modLoader.ModLoading += ModLoading;
 
         // Expose API
-        _api = new Api(AddFolder, AddFolderWithMount);
+        _api = new Api(AddFolder, AddFolderWithVirtualMount, AddFileWithVirtualMount);
         _modLoader.AddOrReplaceController(context.Owner, _api);
     }
 
@@ -320,7 +320,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             _utocEmulator.AddFromFolder(folder);
     }
 
-    private void AddFolderWithMount(string folder, string virtualPath)
+    private void AddFolderWithVirtualMount(string folder, string virtualPath)
     {
         _pakFolders.Add(folder);
         AddRedirections(folder, virtualPath);
@@ -329,6 +329,17 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
         if (_hasUtocs)
             _utocEmulator.AddFromFolderWithMount(folder, virtualPath);
+    }
+
+    private void AddFileWithVirtualMount(string file, string virtualPath)
+    {
+        _pakFolders.Add(file);
+        _redirections[virtualPath] = file;
+        Log($"Loading file at {file}, with emulated path {virtualPath}");
+
+        // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
+        if (_hasUtocs)
+            _utocEmulator.AddFromFolderWithMount(file, virtualPath);
     }
 
     private void AddRedirections(string modsPath, string? virtualPath)

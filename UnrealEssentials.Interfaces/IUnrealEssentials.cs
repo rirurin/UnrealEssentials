@@ -12,7 +12,21 @@ public interface IUnrealEssentials
     /// <param name="path">Path to the folder that contains files to be loaded</param>
     void AddFromFolder(string path);
 
-    void AddFromFolderWithMount(string folderPath, string virtualPath);
+    /// <summary>
+    /// Adds files from the folder at <paramref name="path"/> 
+    /// This folder is treated like it was the UnrealEssentials folder inside of a mod, all files are assumed to be under the virtual path provided.
+    /// </summary>
+    /// <param name="folderPath">Path to the folder that contains files to be loaded</param>
+    /// <param name="virtualPath">The virtual path to mount the folder's files at</param>
+    void AddFromFolderWithVirtualMount(string folderPath, string virtualPath);
+
+    /// <summary>
+    /// Adds files from the folder at <paramref name="path"/> 
+    /// This file will be added via UnrealEssentials and mounted at the virtual path provided.
+    /// </summary>
+    /// <param name="filePath">Path to the file to be loaded</param>
+    /// <param name="virtualPath">The virtual path to mount the file at</param>
+    void AddFileWithVirtualMount(string filePath, string virtualPath);
 
     /// <summary>
     /// Gets the <see cref="IUnrealMemory"/> instance.
