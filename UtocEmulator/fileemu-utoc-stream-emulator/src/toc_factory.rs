@@ -1,21 +1,18 @@
 use std::{
-    cell::RefCell,
-    error::Error,
-    path::{Path, PathBuf},
-    fs, fs::{DirEntry, File},
-    io, io::{BufReader, Cursor, Read, Seek, SeekFrom, Write},
+    path::{PathBuf},
+    fs::File,
+    io::{BufReader, Cursor, Read},
     mem,
-    pin::Pin,
-    sync::{Arc, Mutex, MutexGuard, RwLock, Weak},
+    sync::{Arc, Mutex, MutexGuard},
     time::Instant,
 };
 use crate::{
     asset_collector::{
         GAME_ROOT, MOUNT_POINT, SUITABLE_FILE_EXTENSIONS, ROOT_DIRECTORY, 
-        TocDirectory, TocDirectorySyncRef, TocFile, TocFileSyncRef},
+        TocDirectory, TocDirectorySyncRef},
     io_package::{
         ContainerHeaderPackage,
-        ExportBundle, ExportBundleHeader4,
+        ExportBundleHeader4,
         PackageIoSummaryDeserialize, 
         PackageSummary2},
     io_toc::{
@@ -27,8 +24,7 @@ use crate::{
         IoStoreTocCompressedBlockEntry, IoOffsetAndLength
     },
     metadata::{UtocMetadata, UTOC_METADATA},
-    platform::Metadata,
-    string::{FString32NoHash, FStringSerializer, FStringSerializerExpectedLength, Hasher8, Hasher16}
+    string::{FString32NoHash, FStringSerializer, FStringSerializerExpectedLength, Hasher16}
 };
 
 // Thanks to Swine's work, mod priority is now handled by UnrealEssentials, so there's no need for a _P patch name

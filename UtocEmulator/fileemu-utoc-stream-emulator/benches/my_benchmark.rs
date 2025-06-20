@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use fileemu_utoc_stream_emulator::asset_collector;
 
 #[cfg(not(target_os = "windows"))]
@@ -21,7 +21,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         "p3rpc.rewatchtv", "p3rpc.ryojioutfit", "p3rpc.usefuldescriptions"];
         let base_path = std::env::var("RELOADEDIIMODS").unwrap_or_else(|err| panic!("Environment variable \"RELOADEDIIMODS\" is missing"));
         for curr_mod in mods {
-            asset_collector::add_from_folders(curr_mod, &(base_path.clone() + "/" + curr_mod + "/UnrealEssentials"));
+            asset_collector::add_from_folders(&(base_path.clone() + "/" + curr_mod + "/UnrealEssentials"));
         }
         asset_collector::print_asset_collector_results();
     }));

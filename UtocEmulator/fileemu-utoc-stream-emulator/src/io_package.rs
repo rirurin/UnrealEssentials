@@ -9,18 +9,16 @@ type ExportFilterFlags = u8; // and this one too...
 // Data: contents of .uexp - 4 magic bytes at end
 // Texture Bulk: all of .ubulk
 
-use byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 use crate::{
     metadata::{UtocMetadata, UtocMetaImportType},
     pak_package::{FObjectImport, FObjectExport, GameName, NameMap},
     string::{ FMappedName, FStringDeserializerText, FString16, Hasher16 },
-    toc_factory::{TocResolverCommon, TocResolverType2}
+    toc_factory::{TocResolverCommon}
 };
 use std::{
     error::Error,
-    fs::File,
-    fmt,
-    io::{BufReader, Cursor, ErrorKind, Read, Seek, SeekFrom, Write},
+    io::{Read, Seek, SeekFrom, Write},
     sync::MutexGuard
 };
 // IoStoreObjectIndex is a 64 bit value consisting of a hash of a target string for the lower 62 bits and an object type for the highest 2
@@ -632,9 +630,7 @@ mod tests {
         io::BufReader,
         path::PathBuf
     };
-    use byteorder::NativeEndian;
     use crate::{
-        io_package::{ ContainerHeaderPackage, ExportBundleHeader4, PackageSummary2 },
         platform::Metadata
     };
 

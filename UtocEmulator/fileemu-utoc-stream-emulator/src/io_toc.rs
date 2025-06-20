@@ -1,13 +1,11 @@
 use bitflags::bitflags;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use crate::{
-    io_package::FGraphPackage,
-    string::{FString32NoHash, FStringSerializer, Hasher8, Hasher16},
+    string::{FString32NoHash, FStringSerializer, Hasher16},
 };
 #[cfg(feature = "hash_meta")]
 use sha1::{Sha1, Digest};
 use std::{
-    cmp::Ordering,
     hash::{Hash, Hasher},
     error::Error,
     io::{Cursor, Read, Seek, SeekFrom, Write}

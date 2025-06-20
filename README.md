@@ -18,15 +18,15 @@ Below is a list of games that are known to work with Unreal Essentials. Just bec
 
 If you know of a game that doesn't work you can create an [issue](https://github.com/AnimatedSwine37/UnrealEssentials/issues) and support might be added for it.
 
-| Game       | Notes      |
-|------------|------------|
-| Hi-Fi Rush       | Microsoft Store version is currently broken ([Issue](https://github.com/AnimatedSwine37/UnrealEssentials/issues/13)) |
-| Hogwarts Legacy  |
-| Persona 3 Reload |
-| Sackboy: A Big Adventure |
-| Scarlet Nexus |
+| Game                            | Notes                                                                                                                |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| Hi-Fi Rush                      | Microsoft Store version is currently broken ([Issue](https://github.com/AnimatedSwine37/UnrealEssentials/issues/13)) |
+| Hogwarts Legacy                 |
+| Persona 3 Reload                |
+| Sackboy: A Big Adventure        |
+| Scarlet Nexus                   |
 | Shin Megami Tensei V: Vengeance |
-| The Callisto Protocol | Need to use ASI Loader or remove DRM with [Steamless](https://github.com/atom0s/Steamless/) |
+| The Callisto Protocol           | Need to use ASI Loader or remove DRM with [Steamless](https://github.com/atom0s/Steamless/)                          |
 
 ## Usage
 First you'll need to create a Reloaded mod and set Unreal Esentials as a dependency of it. For more details on making a mod check out Reloaded's [documentation](https://reloaded-project.github.io/Reloaded-II/CreatingMods/).

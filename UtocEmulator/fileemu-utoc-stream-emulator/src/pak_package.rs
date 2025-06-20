@@ -13,10 +13,8 @@ use crate::{
     }
 };
 use std::{
-    collections::BTreeMap,
     error::Error,
-    io::{Cursor, Seek, SeekFrom, Read, Write},
-    option::Option,
+    io::{Seek, SeekFrom, Read, Write},
     ops::Index
 };
 
