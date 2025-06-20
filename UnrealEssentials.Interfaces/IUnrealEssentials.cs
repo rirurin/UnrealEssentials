@@ -12,6 +12,8 @@ public interface IUnrealEssentials
     /// <param name="path">Path to the folder that contains files to be loaded</param>
     void AddFromFolder(string path);
 
+    void AddFromFolderWithMount(string folderPath, string virtualPath);
+
     /// <summary>
     /// Gets the <see cref="IUnrealMemory"/> instance.
     /// This can be used to manipulate memory with the native Unreal Engine functions.  

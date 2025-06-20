@@ -151,7 +151,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _modLoader.ModLoading += ModLoading;
 
         // Expose API
-        _api = new Api(AddFolder);
+        _api = new Api(AddFolder, AddFolderWithMount);
         _modLoader.AddOrReplaceController(context.Owner, _api);
     }
 
@@ -324,7 +324,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     {
         _pakFolders.Add(folder);
         AddRedirections(folder, virtualPath);
-        Log($"Loading files from {folder} with emulated path {virtualPath}");
+        Log($"Loading files from {folder}, with emulated path {virtualPath}");
 
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
         if (_hasUtocs)

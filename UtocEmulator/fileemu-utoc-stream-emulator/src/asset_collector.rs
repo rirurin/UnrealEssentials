@@ -55,8 +55,8 @@ pub fn add_from_folders_with_mount(mod_path: &str, virtual_path: &str) {
             *root_dir_lock = Some(TocDirectory::new_rc(None));
         }
         let virtual_parent: TocDirectorySyncRef = TocDirectory::mount_virtual_path(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), virtual_path);
-
-        add_from_folders_inner(virtual_parent, &mod_path.into(), &mut profiler_mod.data, true);
+        
+        add_from_folders_inner(virtual_parent, &mod_path.into(), &mut profiler_mod.data, false);
         (*profiler_lock).as_mut().unwrap().mods_loaded.push(profiler_mod);
     }
 }
@@ -81,13 +81,19 @@ impl TocDirectory {
     pub fn mount_virtual_path(self_dir: TocDirectorySyncRef, virtual_path: &str) -> TocDirectorySyncRef {
 
         let mut current_ref = Arc::clone(&self_dir);
-
+        let mut first_component = true;
         for path_part in Path::new(virtual_path).components() {
-            let name = match path_part {
+            let mut name = match path_part {
                 Component::Normal(os_str) => os_str.to_string_lossy().to_string(),
                 _ => continue,
             };
 
+            if first_component {
+                first_component = false;
+                if name != "Engine" {
+                    name = String::from("Game");
+                }
+            }
             match TocDirectory::get_child_dir(Arc::clone(&current_ref), &name) {
                 Some(existing) => current_ref = existing,
                 None => {
