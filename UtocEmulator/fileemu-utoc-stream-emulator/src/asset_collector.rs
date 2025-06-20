@@ -10,7 +10,7 @@ use std::{
     collections::{BTreeSet, HashMap},
     fs, fs::File,
     io::BufReader,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf, Component},
     sync::{Arc, Mutex, RwLock, Weak},
     time::Instant
 };
@@ -35,7 +35,28 @@ pub fn add_from_folders(mod_path: &str) {
         if let None = *root_dir_lock {
             *root_dir_lock = Some(TocDirectory::new_rc(None));
         }
-        add_from_folders_inner(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), &mod_path, &mut profiler_mod.data, true);
+        
+        add_from_folders_inner(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), &mod_path.into(), &mut profiler_mod.data, true);
+        (*profiler_lock).as_mut().unwrap().mods_loaded.push(profiler_mod);
+    }
+}
+
+pub fn add_from_folders_with_mount(mod_path: &str, virtual_path: &str) {
+    // mod loading happens synchronously, safe to unwrap
+    let mut profiler_lock = ASSET_COLLECTOR_PROFILER.lock().unwrap();
+    if *profiler_lock == None { // Check profiler is active
+        *profiler_lock = Some(AssetCollectorProfiler::new());
+    }
+    let mod_path: PathBuf = PathBuf::from(mod_path);
+    if Path::exists(Path::new(&mod_path)) {
+        let mut profiler_mod = AssetCollectorProfilerMod::new(mod_path.to_str().unwrap());
+        let mut root_dir_lock = ROOT_DIRECTORY.lock().unwrap();
+        if let None = *root_dir_lock {
+            *root_dir_lock = Some(TocDirectory::new_rc(None));
+        }
+        let virtual_parent: TocDirectorySyncRef = TocDirectory::mount_virtual_path(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), virtual_path);
+
+        add_from_folders_inner(virtual_parent, &mod_path.into(), &mut profiler_mod.data, true);
         (*profiler_lock).as_mut().unwrap().mods_loaded.push(profiler_mod);
     }
 }
@@ -57,6 +78,29 @@ pub struct TocDirectory {
 }
 
 impl TocDirectory {
+    pub fn mount_virtual_path(self_dir: TocDirectorySyncRef, virtual_path: &str) -> TocDirectorySyncRef {
+
+        let mut current_ref = Arc::clone(&self_dir);
+
+        for path_part in Path::new(virtual_path).components() {
+            let name = match path_part {
+                Component::Normal(os_str) => os_str.to_string_lossy().to_string(),
+                _ => continue,
+            };
+
+            match TocDirectory::get_child_dir(Arc::clone(&current_ref), &name) {
+                Some(existing) => current_ref = existing,
+                None => {
+                    let new_dir = TocDirectory::new_rc(Some(name.clone()));
+                    TocDirectory::add_directory(Arc::clone(&current_ref), Arc::clone(&new_dir));
+                    current_ref = new_dir;
+                }
+            }
+        }
+
+        current_ref
+    }
+    
     pub fn new(name: Option<String>) -> Self {
         Self {
             name,

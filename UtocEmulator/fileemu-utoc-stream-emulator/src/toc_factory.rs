@@ -73,7 +73,7 @@ pub fn build_table_of_contents(toc_path: &str, version: u32) -> Option<Vec<u8>> 
 // Some notes about the structure of TOC and CAS for future use:
 //  TocResolver1 (4.25 only)
 // 4.25 features a very different UTOC structure compared to the other versions, and it's pretty clear from that implementation that IO Store was still a work in progress.
-// The TOC structure only contains a smaller header followed by a list of toc entries, containing a chunk id (with a different format!) and a offset + length
+// The TOC structure only contains a smaller header followed by a list of toc entries, containing a chunk id (with a different format!) and an offset + length
 // There isn't even a container header in the UCAS, so it's fair to say that this is different enough to warrant it's own TocResolver.
 //  TocResolver2 (4.25+, 4.26-4.27)
 // TocResolver2 handles a TOC which contains a list of chunk ids, followed by a list of offsets and lengths, then a list of compression blocks, then the directory index

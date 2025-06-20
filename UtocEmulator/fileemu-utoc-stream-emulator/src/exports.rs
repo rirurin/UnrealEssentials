@@ -16,6 +16,20 @@ pub unsafe extern "C" fn AddFromFolders(modPath: *const u16, modPathLength: usiz
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn AddFromFoldersWithMount(
+    modPath: *const u16,
+    modPathLength: usize,
+    virtualPath: *const u16,
+    virtualPathLength: usize
+) {
+    let mod_path = std::slice::from_raw_parts(modPath, modPathLength);
+
+    let virtual_path = std::slice::from_raw_parts(virtualPath, virtualPathLength);
+
+    asset_collector::add_from_folders_with_mount(&String::from_utf16(mod_path).unwrap(), &String::from_utf16(virtual_path).unwrap());
+}
+
+#[no_mangle]
 #[allow(non_snake_case)]
 // haiiii Reloaded!!!! :3
 pub unsafe extern "C" fn BuildTableOfContentsEx(

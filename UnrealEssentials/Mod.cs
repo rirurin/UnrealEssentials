@@ -312,7 +312,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     private void AddFolder(string folder)
     {
         _pakFolders.Add(folder);
-        AddRedirections(folder);
+        AddRedirections(folder, null);
         Log($"Loading files from {folder}");
 
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
@@ -320,20 +320,44 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             _utocEmulator.AddFromFolder(folder);
     }
 
-    private void AddRedirections(string modsPath)
+    private void AddFolderWithMount(string folder, string virtualPath)
+    {
+        _pakFolders.Add(folder);
+        AddRedirections(folder, virtualPath);
+        Log($"Loading files from {folder} with emulated path {virtualPath}");
+
+        // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
+        if (_hasUtocs)
+            _utocEmulator.AddFromFolderWithMount(folder, virtualPath);
+    }
+
+    private void AddRedirections(string modsPath, string? virtualPath)
     {
         foreach (var file in Directory.EnumerateFiles(modsPath, "*", SearchOption.AllDirectories))
         {
-            var gamePath = Path.Combine(@"..\..\..", Path.GetRelativePath(modsPath, file)); // recreate what the game would try to load
+            string relativeFilePath = Path.GetRelativePath(modsPath, file);
+            string gamePath;
+
+            if (!string.IsNullOrWhiteSpace(virtualPath))
+            {
+                // Use virtual mount path
+                gamePath = Path.Combine(@"..\..\..", virtualPath, relativeFilePath);
+            }
+            else
+            {
+                gamePath = Path.Combine(@"..\..\..", relativeFilePath);
+            }
+
+            string normalizedGamePath = gamePath.Replace('\\', '/');
             _redirections[gamePath] = file;
-            _redirections[gamePath.Replace('\\', '/')] = file; // UE could try to load it using either separator
+            _redirections[normalizedGamePath] = file;
         }
     }
 
     private void AddPakFolder(string path)
     {
         _pakFolders.Add(path);
-        AddRedirections(path);
+        AddRedirections(path, null);
         Log($"Loading PAK files from {path}");
     }
 
