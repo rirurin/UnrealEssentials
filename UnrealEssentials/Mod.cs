@@ -1,22 +1,25 @@
 ﻿using Reloaded.Hooks.Definitions;
 using Reloaded.Memory.Sigscan;
+using Reloaded.Memory.Sigscan.Definitions;
 using Reloaded.Mod.Interfaces;
+using Reloaded.Mod.Interfaces.Internal;
+using Reloaded.Mod.Interfaces.Structs.Enums;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using UnrealEssentials.Configuration;
+using UnrealEssentials.Interfaces;
 using UnrealEssentials.Template;
+using UnrealEssentials.Unreal;
+using UTOC.Stream.Emulator.Interfaces;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 using static UnrealEssentials.Unreal.Native;
-using static UnrealEssentials.Utils;
+using static UnrealEssentials.Unreal.UnrealArray;
 using static UnrealEssentials.Unreal.UnrealMemory;
 using static UnrealEssentials.Unreal.UnrealString;
-using static UnrealEssentials.Unreal.UnrealArray;
+using static UnrealEssentials.Utils;
 using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
-using Reloaded.Mod.Interfaces.Internal;
-using Reloaded.Memory.Sigscan.Definitions;
-using UTOC.Stream.Emulator.Interfaces;
-using Reloaded.Mod.Interfaces.Structs.Enums;
-using UnrealEssentials.Interfaces;
-using UnrealEssentials.Unreal;
 
 namespace UnrealEssentials;
 /// <summary>
@@ -302,6 +305,30 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void ModLoading(IModV1 mod, IModConfigV1 modConfig)
     {
+        var virtualConfigPath = Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), "ue.vm.yaml");
+        if (File.Exists(virtualConfigPath))
+        {
+            Log($"Loading virtual paths from {virtualConfigPath}.");
+            List<VirtualEntry> virtualPaths = new DeserializerBuilder()
+            .WithNamingConvention(UnderscoredNamingConvention.Instance)
+            .Build().Deserialize<List<VirtualEntry>>(File.ReadAllText(virtualConfigPath));
+            foreach (var item in virtualPaths)
+            {
+                if (File.Exists(item.OSPath))
+                {
+                    AddFileWithVirtualMount(Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), item.OSPath), item.VirtualPath);
+                }
+                else if (Directory.Exists(item.OSPath))
+                {
+                    AddFolderWithVirtualMount(Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), item.OSPath), item.VirtualPath);
+                }
+                else
+                {
+                    LogDebug($"OSPath: {item.OSPath} supplied in {virtualConfigPath} does not exist!");
+                }
+            }
+        }
+
         var modsPath = Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), "UnrealEssentials");
         if (!Directory.Exists(modsPath))
             return;
@@ -405,6 +432,15 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             var str = new FString(pakFolder);
             outPakFolders->Add(str);
         }
+    }
+
+    public class VirtualEntry
+    {
+        [YamlMember(Alias = "virtual_path")]
+        public string VirtualPath { get; private set; }
+
+        [YamlMember(Alias = "os_path")]
+        public string OSPath { get; private set; }
     }
 
     #region Standard Overrides
