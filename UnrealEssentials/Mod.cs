@@ -334,6 +334,11 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void AddFolder(string folder)
     {
+        if (!Directory.Exists(folder))
+        {
+            LogDebug($"Folder {folder} does not exist, skipping.");
+            return;
+        }
         _pakFolders.Add(folder);
         AddRedirections(folder, null);
         Log($"Loading files from {folder}");
@@ -345,6 +350,11 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void AddFolderWithVirtualMount(string folder, string virtualPath)
     {
+        if (!Directory.Exists(folder))
+        {
+            LogDebug($"Folder {folder} does not exist, skipping.");
+            return;
+        }
         _pakFolders.Add(folder);
         AddRedirections(folder, virtualPath);
         Log($"Loading files from {folder}, with emulated path {virtualPath}");
@@ -356,6 +366,11 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void AddFileWithVirtualMount(string file, string virtualPath)
     {
+        if(!File.Exists(file))
+        {
+            LogDebug($"File {file} does not exist, skipping.");
+            return;
+        }
         _pakFolders.Add(file);
         _redirections[virtualPath] = file;
         Log($"Loading file at {file}, with emulated path {virtualPath}");
