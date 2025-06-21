@@ -306,7 +306,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         {
             Log($"Loading virtual paths from {virtualConfigPath}.");
             List<VirtualEntry> virtualPaths = new DeserializerBuilder()
-            .WithNamingConvention(UnderscoredNamingConvention.Instance)
+            .WithNamingConvention(UnderscoredNamingConvention.Instance).WithEnforceRequiredMembers()
             .Build().Deserialize<List<VirtualEntry>>(File.ReadAllText(virtualConfigPath));
             foreach (var item in virtualPaths)
             {
@@ -433,10 +433,10 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     public class VirtualEntry
     {
         [YamlMember(Alias = "virtual_path")]
-        public string VirtualPath { get; private set; }
+        public required string VirtualPath { get; set; }
 
         [YamlMember(Alias = "os_path")]
-        public string OSPath { get; private set; }
+        public required string OSPath { get; set; }
     }
 
     #region Standard Overrides
