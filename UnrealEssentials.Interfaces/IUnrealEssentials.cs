@@ -13,19 +13,19 @@ public interface IUnrealEssentials
     void AddFromFolder(string path);
 
     /// <summary>
-    /// Adds files from the folder at <paramref name="path"/> 
+    /// Adds files from the folder at <paramref name="folderPath"/> 
     /// This folder is treated like it was the UnrealEssentials folder inside of a mod, all files are assumed to be under the virtual path provided.
     /// </summary>
     /// <param name="folderPath">Path to the folder that contains files to be loaded</param>
-    /// <param name="virtualPath">The virtual path to mount the folder's files at</param>
+    /// <param name="virtualPath">The virtual path to mount the folder's files at, the virtual path must begin with either 'GameName'/Content or Engine</param>
     void AddFromFolderWithVirtualMount(string folderPath, string virtualPath);
 
     /// <summary>
-    /// Adds files from the folder at <paramref name="path"/> 
+    /// Adds files from the folder at <paramref name="filePath"/> 
     /// This file will be added via UnrealEssentials and mounted at the virtual path provided.
     /// </summary>
     /// <param name="filePath">Path to the file to be loaded</param>
-    /// <param name="virtualPath">The virtual path to mount the file at</param>
+    /// <param name="virtualPath">The virtual path to mount the file at, the virtual path must begin with either 'GameName'/Content or Engine</param>
     void AddFileWithVirtualMount(string filePath, string virtualPath);
 
     /// <summary>
