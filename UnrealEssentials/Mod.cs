@@ -301,7 +301,8 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void ModLoading(IModV1 mod, IModConfigV1 modConfig)
     {
-        var virtualConfigPath = Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), "ue.vm.yaml");
+        var modRootPath = _modLoader.GetDirectoryForModId(modConfig.ModId);
+        var virtualConfigPath = Path.Combine(modRootPath, "ue.vm.yaml");
         if (File.Exists(virtualConfigPath))
         {
             Log($"Loading virtual paths from {virtualConfigPath}.");
@@ -312,20 +313,20 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             {
                 if (File.Exists(item.OSPath))
                 {
-                    AddFileWithVirtualMount(Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), item.OSPath), item.VirtualPath);
+                    AddFileWithVirtualMount(Path.Combine(modRootPath, item.OSPath), item.VirtualPath);
                 }
                 else if (Directory.Exists(item.OSPath))
                 {
-                    AddFolderWithVirtualMount(Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), item.OSPath), item.VirtualPath);
+                    AddFolderWithVirtualMount(Path.Combine(modRootPath, item.OSPath), item.VirtualPath);
                 }
                 else
                 {
-                    LogDebug($"OSPath: {item.OSPath} supplied in {virtualConfigPath} does not exist!");
+                    LogError($"OSPath: {item.OSPath} supplied in {virtualConfigPath} does not exist!");
                 }
             }
         }
 
-        var modsPath = Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), "UnrealEssentials");
+        var modsPath = Path.Combine(modRootPath, "UnrealEssentials");
         if (!Directory.Exists(modsPath))
             return;
 
@@ -336,7 +337,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     {
         if (!Directory.Exists(folder))
         {
-            LogDebug($"Folder {folder} does not exist, skipping.");
+            LogError($"Folder {folder} does not exist, skipping.");
             return;
         }
         _pakFolders.Add(folder);
@@ -352,7 +353,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     {
         if (!Directory.Exists(folder))
         {
-            LogDebug($"Folder {folder} does not exist, skipping.");
+            LogError($"Folder {folder} does not exist, skipping.");
             return;
         }
         _pakFolders.Add(folder);
@@ -368,7 +369,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     {
         if(!File.Exists(file))
         {
-            LogDebug($"File {file} does not exist, skipping.");
+            LogError($"File {file} does not exist, skipping.");
             return;
         }
         _pakFolders.Add(file);
