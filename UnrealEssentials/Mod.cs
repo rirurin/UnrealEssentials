@@ -91,7 +91,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _signingKeys->Function = 0;
         _signingKeys->Size = 0;
 
-        // Setup mods path
+        // Setup mods mountFilePath
         var modPath = new DirectoryInfo(_modLoader.GetDirectoryForModId(_modConfig.ModId));
         _modsPath = modPath.Parent!.FullName;
 
@@ -302,13 +302,23 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     private void ModLoading(IModV1 mod, IModConfigV1 modConfig)
     {
         var modRootPath = _modLoader.GetDirectoryForModId(modConfig.ModId);
-        var virtualConfigPath = Path.Combine(modRootPath, "ue.vm.yaml");
-        if (File.Exists(virtualConfigPath))
+        LoadUEMounts(modRootPath, Path.Combine(modRootPath, "UEMounts.yaml"));
+
+        var modsPath = Path.Combine(modRootPath, "UnrealEssentials");
+        if (!Directory.Exists(modsPath))
+            return;
+
+        AddFolder(modsPath);
+    }
+
+    private void LoadUEMounts(string modRootPath, string mountFilePath)
+    {
+        if (File.Exists(mountFilePath))
         {
-            Log($"Loading virtual paths from {virtualConfigPath}.");
+            Log($"Loading virtual paths from {mountFilePath}.");
             List<VirtualEntry> virtualPaths = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance).WithEnforceRequiredMembers()
-            .Build().Deserialize<List<VirtualEntry>>(File.ReadAllText(virtualConfigPath));
+            .Build().Deserialize<List<VirtualEntry>>(File.ReadAllText(mountFilePath));
             foreach (var item in virtualPaths)
             {
                 if (File.Exists(item.OSPath))
@@ -321,16 +331,10 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
                 }
                 else
                 {
-                    LogError($"OSPath: {item.OSPath} supplied in {virtualConfigPath} does not exist!");
+                    LogError($"OSPath: {item.OSPath} supplied in {mountFilePath} does not exist!");
                 }
             }
         }
-
-        var modsPath = Path.Combine(modRootPath, "UnrealEssentials");
-        if (!Directory.Exists(modsPath))
-            return;
-
-        AddFolder(modsPath);
     }
 
     private void AddFolder(string folder)
@@ -358,7 +362,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         }
         _pakFolders.Add(folder);
         AddRedirections(folder, virtualPath);
-        Log($"Loading files from {folder}, with emulated path {virtualPath}");
+        Log($"Loading files from {folder}, with emulated mountFilePath {virtualPath}");
 
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
         if (_hasUtocs)
@@ -374,7 +378,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         }
         _pakFolders.Add(file);
         _redirections[virtualPath] = file;
-        Log($"Loading file at {file}, with emulated path {virtualPath}");
+        Log($"Loading file at {file}, with emulated mountFilePath {virtualPath}");
 
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
         if (_hasUtocs)
@@ -390,7 +394,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
             if (!string.IsNullOrWhiteSpace(virtualPath))
             {
-                // Use virtual mount path
+                // Use virtual mount mountFilePath
                 gamePath = Path.Combine(@"..\..\..", virtualPath, relativeFilePath);
             }
             else
@@ -444,15 +448,6 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             var str = new FString(pakFolder);
             outPakFolders->Add(str);
         }
-    }
-
-    public class VirtualEntry
-    {
-        [YamlMember(Alias = "virtual_path")]
-        public required string VirtualPath { get; set; }
-
-        [YamlMember(Alias = "os_path")]
-        public required string OSPath { get; set; }
     }
 
     #region Standard Overrides
