@@ -25,6 +25,7 @@ namespace UTOC.Stream.Emulator
         public Logger _logger { get; init; }
         public TocType? TocVersion { get; set; }
         public PakType PakVersion { get; set; }
+        public TocChunkIdType ChunkIdVersion { get; set; }
         public Strim? TocStream { get; set; }
         public Strim? CasStream { get; set; }
         private string ModPath { get; init; }
@@ -193,9 +194,12 @@ namespace UTOC.Stream.Emulator
         public void OnModLoading(string dir_path)
         {
             var mod_path = Path.Combine(dir_path, "UTOC", "UnrealEssentials.utoc");
-            nint mod_path_unicode = Marshal.StringToHGlobalUni(mod_path);
-            RustApi.AddFromFolders(mod_path_unicode, mod_path.Length);
-            Marshal.FreeHGlobal(mod_path_unicode);
+            if (Path.Exists(mod_path))
+            {
+                nint mod_path_unicode = Marshal.StringToHGlobalUni(mod_path);
+                RustApi.AddFromFolders(mod_path_unicode, mod_path.Length);
+                Marshal.FreeHGlobal(mod_path_unicode);   
+            }
         }
 
         public void AddFromFolder(string dir_path)
@@ -207,6 +211,9 @@ namespace UTOC.Stream.Emulator
 
         public void MakeFilesOnInit() // from base Unreal Essentials path
         {
+            RustApi.CloseFolderThreads();
+            return;
+            /*
             if (TocVersion == null)
             {
                 _logger.Info($"[UtocEmulator] Toc Version was not provided, stopping here");
@@ -245,10 +252,10 @@ namespace UTOC.Stream.Emulator
                 CasStream = new MultiStream(CreateContainerStream(blockPtr, (int)blockCount, headerPtr, (int)headerSize), _logger);
             }
             AddPakFolderCb(ModTargetFilesDirectory);
+            */
         }
         public void OnLoaderInit()
         {
-            RustApi.PrintAssetCollectorResults();
             MakeFilesOnInit();
         }
     }

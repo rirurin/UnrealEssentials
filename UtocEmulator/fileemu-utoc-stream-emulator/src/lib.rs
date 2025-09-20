@@ -1,12 +1,35 @@
-//! # Some Cool Reloaded Library
-//! Here's the crate documentation.
+//! # UTOC File Emulator
+//! *Rust portion*
 
-pub mod asset_collector; // Building tree of directories/files
-pub mod exports; // FFI (called from C#)
-pub mod io_package; // Handling IO Store packages
+pub mod asset {
+    pub mod collector;
+    pub mod node;
+}
 pub mod io_toc; // Types for IO Store Table of Contents
-pub mod pak_package; // Handling cooked packages (WIP)
-pub mod toc_factory; // Build IO Store TOC
+pub mod global;
+pub mod logger;
 pub mod platform; // Platform agnostic abstractions
+pub mod serial {
+    pub mod chunk {
+        pub mod ctype;
+        pub mod error;
+        pub mod id;
+    }
+    pub mod container {
+        pub mod id;
+    }
+    pub mod header {
+        pub mod common;
+        pub mod error;
+        pub mod version;
+    }
+    pub mod package {
+        pub mod error;
+        pub mod id;
+    }
+}
 pub mod string; // Unreal serialized string types
-pub mod metadata; // (1.1) Parsing UTOC Metadata file to customize handling of assets
+pub mod metadata;
+pub mod util {
+    pub mod tests;
+}

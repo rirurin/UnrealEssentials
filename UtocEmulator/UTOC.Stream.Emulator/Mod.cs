@@ -1,9 +1,9 @@
-﻿using FileEmulationFramework.Interfaces;
+﻿using System.Diagnostics.CodeAnalysis;
+using FileEmulationFramework.Interfaces;
 using FileEmulationFramework.Lib.Utilities;
 using Reloaded.Mod.Interfaces;
 using Reloaded.Mod.Interfaces.Internal;
 using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
-using System.Diagnostics;
 using UTOC.Stream.Emulator.Configuration;
 using UTOC.Stream.Emulator.Template;
 using UTOC.Stream.Emulator.Interfaces;
@@ -48,7 +48,7 @@ namespace UTOC.Stream.Emulator
 
         // File Emulation Framework Globals
         private Logger _log;
-        private UtocEmulator _emu;
+        private UtocEmulator? _emu;
         
         private IUtocEmulator _api;
 
@@ -63,13 +63,14 @@ namespace UTOC.Stream.Emulator
             _modConfig = context.ModConfig;
 
             _log = new Logger(_logger, _configuration.LogLevel);
+            LogAdapter.RegisterLogger(_log);
 
             // Expose API
-            _api = new Api(Initialise, (folder) => _emu.AddFromFolder(folder));
+            _api = new Api(Initialise, (folder) => _emu!.AddFromFolder(folder));
             _modLoader.AddOrReplaceController(context.Owner, _api);
         }
 
-        public void Initialise(TocType? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
+        public void Initialise(TocType? tocType, PakType pakType, TocChunkIdType chunkIdType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
         {
             _log.Info("Starting UTOC.Stream.Emulator");
             _emu = new UtocEmulator(
@@ -81,6 +82,12 @@ namespace UTOC.Stream.Emulator
             var ctrl_weak = _modLoader.GetController<IEmulationFramework>().TryGetTarget(out var framework);
             _emu.TocVersion = tocType; // Set Toc Version
             _emu.PakVersion = pakType; // Set Pak Version
+            _emu.ChunkIdVersion = chunkIdType;
+            if (_emu.TocVersion != null)
+            {
+                RustApi.SetTocVersion(_emu.TocVersion.Value, _emu.ChunkIdVersion);
+                RustApi.SetupFolderThreads();
+            }
             framework!.Register(_emu);
         }
         
@@ -89,9 +96,9 @@ namespace UTOC.Stream.Emulator
         {
             _modLoader.OnModLoaderInitialized -= OnLoaderInit;
             _modLoader.ModLoading -= OnModLoading;
-            _emu.OnLoaderInit();
+            _emu!.OnLoaderInit();
         }
-        private void OnModLoading(IModV1 mod, IModConfigV1 conf) => _emu.OnModLoading(_modLoader.GetDirectoryForModId(conf.ModId));
+        private void OnModLoading(IModV1 mod, IModConfigV1 conf) => _emu!.OnModLoading(_modLoader.GetDirectoryForModId(conf.ModId));
         
         #region Standard Overrides
         public override void ConfigurationUpdated(Config configuration)

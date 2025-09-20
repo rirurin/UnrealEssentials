@@ -1,9 +1,6 @@
 use bitflags::bitflags;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use crate::{
-    io_package::FGraphPackage,
-    string::{FString32NoHash, FStringSerializer, Hasher8, Hasher16},
-};
+use crate::string::{FString32NoHash, FStringSerializer, Hasher8, Hasher16};
 #[cfg(feature = "hash_meta")]
 use sha1::{Sha1, Digest};
 use std::{
@@ -632,56 +629,5 @@ impl IoStoreTocEntryMeta {
             i.to_buffer::<W, E>(writer)?;
         }
         Ok(())
-    }
-}
-
-pub struct ContainerHeader {
-    container_id: u64,
-    pub packages: Vec<crate::io_package::ContainerHeaderPackage>,
-}
-impl ContainerHeader {
-    // Write package header data into ucas
-    pub fn new(container_id: u64) -> Self {
-        Self { container_id, packages: vec![] }
-    }
-    pub fn to_buffer<W: Write + Seek, E: byteorder::ByteOrder>(&self, writer: &mut W) -> Result<Vec<u8>, Box<dyn Error>> {
-        // Container Header:
-        // - ContainerId + Package Name Count (number of ExportBundleData)
-        // - Names array - empty
-        // - Name Hashes - one entry containing FNameHash::AlgorithmId
-        // - Package Ids - hashes of each export bundle
-        // - Store Entries - store entry data for each export bundle (import ids => graph package ids)
-        // Culture Package Map - empty
-        // Package Redirects - empty
-        // Padding to align it to nearest 0x10
-        let mut container_header_writer: Cursor<Vec<u8>> = Cursor::new(vec![]);
-        container_header_writer.write_u64::<E>(self.container_id)?;
-        container_header_writer.write_u32::<E>(self.packages.len() as u32)?;
-        // TODO: Implement TArray to_buffer
-        container_header_writer.write_u32::<E>(0)?; // TArray<u8> Names
-        container_header_writer.write_u32::<E>(8)?; // TArray<u8> NameHashes
-        container_header_writer.write_u64::<E>(crate::string::NAME_HASH_ALGORITHM)?;
-        container_header_writer.write_u32::<E>(self.packages.len() as u32)?; // TArray<FPackageId> PackageIds
-        for i in &self.packages {
-            container_header_writer.write_u64::<E>(i.hash)?;
-        }
-        //println!("Written {} package ids into container header", self.packages.len());
-        let import_list_base_offset = crate::io_package::CONTAINER_HEADER_PACKAGE_SERIALIZED_SIZE * self.packages.len() as u64; // TArray->data, len is written further down
-        let mut import_list_already_written_offset = 0;
-        let mut store_entry_writer: Cursor<Vec<u8>> = Cursor::new(vec![]);
-        for i in &self.packages {
-            i.to_buffer_store_entry::<Cursor<Vec<u8>>, E>(&mut store_entry_writer, import_list_base_offset, &mut import_list_already_written_offset)?;
-        }
-        let store_entry_writer = store_entry_writer.into_inner();
-        container_header_writer.write_u32::<E>(store_entry_writer.len() as u32)?;
-        container_header_writer.write_all(&store_entry_writer);
-        container_header_writer.write_u32::<E>(0)?; // CulturePackageMap
-        container_header_writer.write_u32::<E>(0)?; // PackageRedirectss
-        let serialized = container_header_writer.into_inner();
-        writer.write_all(&serialized); // Write into main buffer, then align to the nearest 0x10
-        //PartitionSerializer::new(0x10).to_buffer_alignment::<W, E>(writer);
-        //writer.seek(SeekFrom::Current(-1));
-        //writer.write(&[0x0])?;
-        Ok(serialized)
     }
 }

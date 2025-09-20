@@ -242,7 +242,7 @@ impl Hasher8 {
 pub struct Hasher16;
 impl Hasher16 {
     pub fn get_cityhash64(bytes: &str) -> u64 {
-        let to_hash = String::from(bytes).to_lowercase();
+        let to_hash = bytes.to_lowercase();
         // hash chars are sized according to if the platform supports wide characters, which is usually the case
         let to_hash: Vec<u16> = to_hash.encode_utf16().collect();
         // safety: Vec is contiguous, so a Vec<u8> of length `2 * n` will take the same memory as a Vec<u16> of len `n`

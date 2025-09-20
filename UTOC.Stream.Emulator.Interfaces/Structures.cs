@@ -1,11 +1,13 @@
 ﻿namespace UTOC.Stream.Emulator.Interfaces;
 
-public enum TocType
+public enum TocType : byte
 {
     Initial = 1, // 4.25
     DirectoryIndex = 2, // 4.25+, 4.26
     PartitionSize = 3, // 4.27
-    PerfectHash = 4, // 5.0+
+    PerfectHash = 4, // 5.0 - 5.3
+    OnDemandMetaData = 6, // 5.4
+    ReplaceIoChunkHashWithIoHash = 8, // 5.5
 }
 
 // UE4 pak type
@@ -23,3 +25,14 @@ public enum PakType
     Fn64BugFix = 9
 }
 
+public enum TocChunkIdType : byte
+{
+    // Initial implementation
+    Type1 = 1, // 4.25
+    // Added MemoryMappedBulkData and ContainerHeader
+    Type2 = 2, // 4.25+, 4.26 - 4.27
+    // Added shader code and derived data
+    Type3 = 3, // 5.0, 5.1
+    // Added PackageResource
+    Type4 = 4, // 5.2
+}

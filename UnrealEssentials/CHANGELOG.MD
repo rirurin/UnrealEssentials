@@ -1,4 +1,7 @@
 # Unreal Essentials Changelog
+## 2.0.0
+- Added Unreal Engine 5 support
+- Added file logging for games that use UTOC
 ## 1.2.0
 - Added IUnrealMemory to the API to help working with memory using the native UE allocator (@TheBestAstroNOT)
 

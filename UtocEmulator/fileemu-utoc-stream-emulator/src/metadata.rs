@@ -64,7 +64,7 @@ impl UtocMetadata {
         let alt_auto_import_count = metadata_reader.read_u32::<TByteOrder>().unwrap();
         let manual_import_count = metadata_reader.read_u32::<TByteOrder>().unwrap();
         let compressed_package_count = metadata_reader.read_u32::<TByteOrder>().unwrap();
-        println!("{}, {}, {}, {}", version, alt_auto_import_count, manual_import_count, compressed_package_count);
+        // println!("{}, {}, {}, {}", version, alt_auto_import_count, manual_import_count, compressed_package_count);
         // read alt auto imports
         for i in 0..alt_auto_import_count {
             let curr_import = metadata_reader.read_u64::<TByteOrder>().unwrap();

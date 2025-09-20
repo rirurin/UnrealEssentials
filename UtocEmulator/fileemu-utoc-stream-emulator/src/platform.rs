@@ -1,50 +1,37 @@
-use std::fs::{ DirEntry, File };
+// use std::fs::{ DirEntry, File };
+use walkdir::DirEntry;
 
-#[cfg(target_os = "linux")]
-use std::os::linux;
-
-#[cfg(target_os = "unix")]
-use std::os::unix;
+#[cfg(target_family = "unix")]
+use std::os::unix::fs::MetadataExt;
 
 #[cfg(target_os = "windows")]
-use std::os::windows;
+use std::os::windows::fs::MetadataExt;
 
 pub struct Metadata;
 
 impl Metadata {
-    #[cfg(target_os = "linux")]
+
+    #[cfg(target_family = "unix")]
     pub fn get_object_size(fs_obj: &DirEntry) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        linux::fs::MetadataExt::st_size(&meta)
+        fs_obj.metadata().unwrap().file_size()
     }
 
-    #[cfg(target_os = "linux")]
+    /*
+    #[cfg(target_family = "unix")]
     pub fn get_file_size(fs_obj: &File) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        linux::fs::MetadataExt::st_size(&meta)
+        fs_obj.metadata().unwrap().file_size()
     }
-
-    #[cfg(target_os = "unix")]
-    pub fn get_object_size(fs_obj: &DirEntry) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        linux::fs::MetadataExt::size(&meta)
-    }
-
-    #[cfg(target_os = "unix")]
-    pub fn get_file_size(fs_obj: &File) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        linux::fs::MetadataExt::size(&meta)
-    }
+    */
 
     #[cfg(target_os = "windows")]
     pub fn get_object_size(fs_obj: &DirEntry) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        windows::fs::MetadataExt::file_size(&meta)
+        fs_obj.metadata().unwrap().file_size()
     }
 
+    /*
     #[cfg(target_os = "windows")]
     pub fn get_file_size(fs_obj: &File) -> u64 {
-        let meta = fs_obj.metadata().unwrap();
-        windows::fs::MetadataExt::file_size(&meta)
+        fs_obj.metadata().unwrap().file_size()
     }
+    */
 }

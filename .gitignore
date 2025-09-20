@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # For Rust projects
 target/
 Cargo.lock
+
+# Jetbrains IDE
+**/.idea/*

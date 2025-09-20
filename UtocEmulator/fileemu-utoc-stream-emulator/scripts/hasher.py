@@ -12,6 +12,8 @@ def main():
         encoded = asset_name.lower()
         encoded_utf8 = encoded.encode("utf-8")
         encoded_utf16 = encoded.encode("utf-16")[2:]
+        print(f"{encoded_utf16.hex(' ')}")
+        # encoded_utf16 = encoded.encode("utf-16")
         print("little endian UTF-8: " + CityHash64(encoded_utf8).to_bytes(8, "little").hex())
         print("big endian UTF-8: " + CityHash64(encoded_utf8).to_bytes(8, "big").hex())
         print("little endian UTF-16: " + CityHash64(encoded_utf16).to_bytes(8, "little").hex())
