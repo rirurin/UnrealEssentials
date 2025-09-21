@@ -157,6 +157,7 @@ impl ChunkIdImpl for Type4 {
 /// (append -- --test-threads=1 to your cargo test command)
 #[cfg(test)]
 mod tests {
+    use crate::global::EngineVersion;
     use crate::serial::header::version::IoStoreTocVersion;
     use crate::serial::chunk::ctype::Types;
     use super::*;
@@ -167,7 +168,7 @@ mod tests {
     // TODO
     #[test]
     fn hash_path_type1() {
-        setup(IoStoreTocVersion::Initial, Types::Type1);
+        crate::util::tests::setup(EngineVersion::UE_4_25);
         let hash = ChunkId::from_os_path(TEST_PATH).unwrap();
         println!("T1: {:?}", hash);
     }
@@ -175,21 +176,21 @@ mod tests {
 
     #[test]
     fn hash_path_type2() {
-        crate::util::tests::setup(IoStoreTocVersion::DirectoryIndex, Types::Type2);
+        crate::util::tests::setup(EngineVersion::UE_4_27);
         let hash = ChunkId::from_os_path(TEST_PATH).unwrap();
         assert_eq!(hash.storage, [152, 137, 181, 98, 75, 46, 120, 62, 0, 0, 0, 2]);
     }
 
     #[test]
     fn hash_path_type3() {
-        crate::util::tests::setup(IoStoreTocVersion::DirectoryIndex, Types::Type3);
+        crate::util::tests::setup(EngineVersion::UE_5_0);
         let hash = ChunkId::from_os_path(TEST_PATH).unwrap();
         assert_eq!(hash.storage, [152, 137, 181, 98, 75, 46, 120, 62, 0, 0, 0, 1]);
     }
 
     #[test]
     fn hash_path_type4() {
-        crate::util::tests::setup(IoStoreTocVersion::DirectoryIndex, Types::Type4);
+        crate::util::tests::setup(EngineVersion::UE_5_3);
         let hash = ChunkId::from_os_path(TEST_PATH).unwrap();
         assert_eq!(hash.storage, [152, 137, 181, 98, 75, 46, 120, 62, 0, 0, 0, 1]);
     }

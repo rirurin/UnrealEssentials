@@ -60,6 +60,9 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
     private readonly Context? _context;
     private readonly PakMethods _pakMethods;
     private readonly UtocMethods? _utocMethods;
+    #if DEBUG
+    private readonly DebugComponent _debug;
+    #endif
 
     private IUnrealEssentials _api;
     internal static IUnrealMemory Memory;
@@ -83,6 +86,9 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         {
             _utocMethods = new UtocMethods(_hooks!, _context!);
         }
+        #if DEBUG
+        _debug = new DebugComponent(_hooks!, _modLoader, _modConfig, _configuration, _context!);
+        #endif
         UnrealName.FNamePool.Initialize(_hooks!, _context!._signatures);
 
         // Gather pak files from mods

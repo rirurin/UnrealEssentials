@@ -26,6 +26,7 @@ If you know of a game that doesn't work you can create an [issue](https://github
 | DRAGON BALL: Sparking! ZERO | 5.1 | TODO
 | Hi-Fi Rush       | 4.27 |  |
 | Hogwarts Legacy  | 4.27 |
+| Jujutsu Kaisen: Cursed Clash | 5.1 | TODO
 | Persona 3 Reload | 4.27 |
 | Rune Factory: Guardians of Azuma | 5.? | TODO
 | Sonic Racing: CrossWorlds | 5.4 | TODO

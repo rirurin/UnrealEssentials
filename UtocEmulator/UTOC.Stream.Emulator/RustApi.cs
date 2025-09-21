@@ -18,7 +18,7 @@ namespace UTOC.Stream.Emulator
         internal static extern void SetReloadedLogger(delegate* unmanaged[Stdcall]<nint, nint, int, void> offset);
         
         [DllImport(__DllName, EntryPoint = "set_toc_version", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
-        internal static extern void SetTocVersion(TocType toc, TocChunkIdType chunk);
+        internal static extern void SetTocVersion(EngineVersion toc);
         
         [DllImport(__DllName, EntryPoint = "setup_folder_threads", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
         internal static extern void SetupFolderThreads();

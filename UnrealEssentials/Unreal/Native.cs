@@ -55,6 +55,7 @@ internal unsafe class Native
     [StructLayout(LayoutKind.Explicit)]
     internal struct FAsyncPackage2
     {
+        [FieldOffset(0x18)] internal ulong DiskPackageId;
         [FieldOffset(0x28)] internal UnrealName.FName DiskPackageName;
     }
     

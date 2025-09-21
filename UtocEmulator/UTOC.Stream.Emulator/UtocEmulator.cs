@@ -23,9 +23,8 @@ namespace UTOC.Stream.Emulator
     {
         public bool DumpFiles { get; set; }
         public Logger _logger { get; init; }
-        public TocType? TocVersion { get; set; }
+        public EngineVersion? TocVersion { get; set; }
         public PakType PakVersion { get; set; }
-        public TocChunkIdType ChunkIdVersion { get; set; }
         public Strim? TocStream { get; set; }
         public Strim? CasStream { get; set; }
         private string ModPath { get; init; }

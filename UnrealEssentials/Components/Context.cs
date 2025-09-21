@@ -34,7 +34,7 @@ internal class Context
         // Initialize UTOC Emulator
         _modLoader.GetController<IUtocEmulator>().TryGetTarget(out _utocEmulator);
         _utocEmulator!.Initialise(
-            _signatures.TocVersion, _signatures.PakVersion, _signatures.ChunkIdType, 
+            _signatures.TocVersion, _signatures.PakVersion,
             _signatures.FileIoStoreOpenContainer, _signatures.ReadBlocks, 
             AddPakFolder, RemovePakFolder
             );

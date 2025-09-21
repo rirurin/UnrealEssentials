@@ -79,11 +79,11 @@ internal class UtocMethods
     private unsafe void FAsyncPackage2_StartLoading0Impl(Native.FAsyncPackage2* Self) 
     {
         var DiskName = Self->DiskPackageName;
+        var ChunkId = new Native.FIoChunkId(Self->DiskPackageId, 0, 2);
         if (!DiskName.IsNone())
         {
-            LogDebug($"StartLoading: {DiskName}");    
+            LogDebug($"StartLoading: {DiskName} ({ChunkId})");    
         }
-        // var ChunkId = new Native.FIoChunkId(Self->Desc.DiskPackageId, 0, 2);
         _startLoading0.OriginalFunction(Self);
     }
     

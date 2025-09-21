@@ -4,6 +4,7 @@ use std::{
     fmt,
     io::{Cursor, Read, Write, Seek, SeekFrom}
 };
+use rkyv::{Archive, Deserialize, Serialize};
 
 // Serialized versions of Unreal Engine's FString type. Mostly used as an intermediate between bytes and a full string
 // TODO: Make it not completely die if an inappropriate endianess is passed - would require some trait Length to check that
@@ -252,7 +253,8 @@ impl Hasher16 {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Archive, Deserialize, Serialize)]
 pub struct FMappedName(u32, u32); // NameIndex, ExtraIndex
 // first field is index in name map
 
@@ -262,6 +264,9 @@ impl FMappedName {
     }
     pub fn get_extra_index(&self) -> u32 {
         self.1
+    }
+    pub const fn new(name_index: u32, extra_index: u32) -> Self {
+        Self (name_index, extra_index)
     }
 }
 

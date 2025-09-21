@@ -15,10 +15,10 @@ public class Api : IUtocEmulator
 
     public void AddFromFolder(string folder) => _addFromFolder(folder);
 
-    public void Initialise(TocType? tocType, PakType pakType, TocChunkIdType chunkIdType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
+    public void Initialise(EngineVersion? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
     {
-        _initialise(tocType, pakType, chunkIdType, fileIoStoreSig, readBlockSig, addPakFolder, removePakFolder);
+        _initialise(tocType, pakType, fileIoStoreSig, readBlockSig, addPakFolder, removePakFolder);
     }
 
-    internal delegate void InitialiseDelegate(TocType? tocType, PakType pakType, TocChunkIdType chunkIdType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder);
+    internal delegate void InitialiseDelegate(EngineVersion? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder);
 }

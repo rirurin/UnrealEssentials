@@ -62,10 +62,8 @@ impl Node {
         (Key::dir(""), Self::Return)
     }
 
-    #[allow(mutable_transmutes)]
-    pub fn insert(&self, value: (Key, Self)) {
-        let self_mut = unsafe { std::mem::transmute::<_, &mut Self>(self) };
-        if let Self::Dir(dir) = self_mut {
+    pub fn insert(&mut self, value: (Key, Self)) {
+        if let Self::Dir(dir) = self {
             dir.insert(value.0, value.1);
         }
     }

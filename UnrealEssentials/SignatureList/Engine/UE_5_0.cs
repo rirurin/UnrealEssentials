@@ -20,13 +20,12 @@ public class UE_5_0 : ISignatureList
             FileIoStoreOpenContainer = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 48 89 7C 24 ?? 41 56 48 83 EC 20 49 8B F1 4D 8B F0",
             ReadBlocks = "4C 8B DC 49 89 4B ?? 53 57 41 54",
             FileExists = "48 89 74 24 ?? 57 48 83 EC 30 45 33 C9 45 33 C0 48 8B FA 48 8B F1 E8 ?? ?? ?? ?? 84 C0 74 ?? B0 01 48 8B 74 24 ?? 48 83 C4 30 5F C3 48 89 5C 24 ?? 48 8D 4C 24 ?? 48 8B D7 48 89 6C 24 ?? 32 DB E8 ?? ?? ?? ?? 48 8D 54 24 ?? 48 8B CE E8 ?? ?? ?? ?? 48 8B 4C 24 ?? 0F B6 E8 48 85 C9 74 ?? E8 ?? ?? ?? ?? 40 84 ED 48 8B 6C 24 ?? 74 ?? 48 8B 4E ?? 48 8B D7 48 8B 01 FF 50 ??",
-            TocVersion = TocType.PerfectHash,
+            TocVersion = EngineVersion.UE_5_0,
             PakVersion = PakType.Fn64BugFix,
             FIOBatch_ReadInternal = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 54 41 56 41 57 48 83 EC 30 48 8B 01 4C 8B F1",
             FAsyncPackage2_StartLoading = "48 89 5C 24 ?? 55 56 57 48 8D 6C 24 ?? 48 81 EC F0 00 00 00 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B F9 48 8B F2",
             StartLoadDelegate = StartLoadingDelegateType.AddIoBatch,
             GFNamePool = "4C 8D 05 ?? ?? ?? ?? EB ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 44 8B 4F ??",
-            ChunkIdType = TocChunkIdType.Type3,
         };
     }
 

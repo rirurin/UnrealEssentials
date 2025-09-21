@@ -10,7 +10,7 @@ public class UE_5_5 : ISignatureList
     {
         Signatures = new Signatures
         {
-            TocVersion = TocType.ReplaceIoChunkHashWithIoHash,
+            TocVersion = EngineVersion.UE_5_5,
             PakVersion = PakType.Fn64BugFix,
             StartLoadDelegate = StartLoadingDelegateType.DescAddInstancingContext,
         };

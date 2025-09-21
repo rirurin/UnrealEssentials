@@ -2,7 +2,7 @@
 
 use std::fmt::{Formatter, LowerHex};
 use std::ops::Deref;
-use crate::serial::package::error::PackageError;
+use crate::string::Hasher16;
 
 #[repr(transparent)]
 #[derive(Debug)]
@@ -18,5 +18,17 @@ impl Deref for PackageId {
 impl LowerHex for PackageId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl From<u64> for PackageId {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl PackageId {
+    pub fn from_string(s: &str) -> Self {
+        Self(Hasher16::get_cityhash64(s))
     }
 }

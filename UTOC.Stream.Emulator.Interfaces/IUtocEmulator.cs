@@ -2,7 +2,7 @@
 public interface IUtocEmulator
 {
     public void Initialise(
-        TocType? tocType, PakType pakType, TocChunkIdType idType,
+        EngineVersion? tocType, PakType pakType,
         string fileIoStoreSig, string readBlockSig, 
         Action<string> addPakFolder, Action<string> removePakFolder
         );

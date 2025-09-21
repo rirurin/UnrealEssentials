@@ -3,6 +3,7 @@
 use std::fmt::{Formatter, LowerHex};
 use std::ops::Deref;
 use std::sync::OnceLock;
+use crate::string::Hasher16;
 
 #[repr(transparent)]
 #[derive(Debug)]
@@ -21,4 +22,16 @@ impl LowerHex for ContainerId {
     }
 }
 
-pub(crate) static CONTAINER_HASH: OnceLock<u64> = OnceLock::new();
+impl From<u64> for ContainerId {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl ContainerId {
+    pub fn from_string(s: &str) -> Self {
+        Self(Hasher16::get_cityhash64(s))
+    }
+}
+
+pub(crate) static CONTAINER_HASH: OnceLock<ContainerId> = OnceLock::new();

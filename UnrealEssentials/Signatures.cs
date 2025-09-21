@@ -30,9 +30,8 @@ public struct Signatures
     internal string IsNonPakFilenameAllowed { get; set; } // FPakPlatformFile::IsNonPakFilenameAllowed
     internal string FileIoStoreOpenContainer { get; set; } // FGenericFileIoStoreImpl::OpenContainer
     internal string ReadBlocks { get; set; } // FFileIoStore::ReadBlocks
-    internal TocType? TocVersion { get; set; }
+    internal EngineVersion? TocVersion { get; set; }
     internal PakType PakVersion { get; set; }
-    internal TocChunkIdType ChunkIdType { get; set; }
     internal string FileExists { get; set; } // FPakPlatformFile::FileExists
     internal string FIOBatch_ReadInternal { get; set; }
     internal string FAsyncPackage2_StartLoading { get; set; }

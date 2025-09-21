@@ -77,6 +77,13 @@ impl Collector {
                 unsafe { *(std::mem::transmute::<_, &mut u8>(&full_path.as_bytes()[i])) = b'/' };
             }
             let path = &full_path[path.len() + 1..]; // relative to base directory
+            /*
+            match ChunkId::from_os_path(path).and_then(|hash| {
+                Ok(hash)
+            }) {
+                _ => ()
+            }
+            */
             match ChunkId::from_os_path(path) {
                 Ok(hash) => {
                     let size = Metadata::get_object_size(&entry);
@@ -88,12 +95,14 @@ impl Collector {
                         match curr.get_dir(*dir) {
                             Some(ch) => curr = ch,
                             None => {
-                                curr.insert(Node::new_dir(*dir));
+                                let curr_mut = unsafe { &mut *(&raw const *curr as *mut Node) };
+                                curr_mut.insert(Node::new_dir(*dir));
                                 curr = curr.get_dir(*dir).unwrap();
                             }
                         }
                     }
-                    curr.insert(Node::new_file(*dirs.last().unwrap(), hash, size, path, prio));
+                    let curr_mut = unsafe { &mut *(&raw const *curr as *mut Node) };
+                    curr_mut.insert(Node::new_file(*dirs.last().unwrap(), hash, size, path, prio));
                 },
                 Err(e) => {
                     log!(Warning, "Could not add file {}. Reason: {}", path, e);
@@ -211,18 +220,23 @@ pub unsafe extern "C" fn close_folder_threads() {
 /// (append -- --test-threads=1 to your cargo test command)
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
     use std::time::Instant;
     use crate::asset::collector::{add_from_folders_impl, close_folder_threads, setup_folder_threads};
-    use crate::serial::chunk::ctype::Types;
-    use crate::serial::header::version::IoStoreTocVersion;
+    use crate::global::EngineVersion;
 
     #[test]
     fn mod_test() {
-        crate::util::tests::setup(IoStoreTocVersion::DirectoryIndex, Types::Type2);
+        crate::util::tests::setup(EngineVersion::UE_4_27);
         unsafe { setup_folder_threads() };
         let start = Instant::now();
-        add_from_folders_impl("E:/Reloaded-II/Mods/p3rpc.isitworking/UnrealEssentials".to_owned());
-        // add_from_folders_impl("E:/Reloaded-II/Mods/p3rpc.femc/UnrealEssentials".to_owned());
+        let r2mods = PathBuf::from(std::env::var("RELOADEDIIMODS").unwrap())
+            .join("p3rpc.isitworking/UnrealEssentials");
+
+        if !Path::new(r2mods.as_path()).exists() {
+            return;
+        }
+        add_from_folders_impl(r2mods.to_str().unwrap().to_owned());
         unsafe { close_folder_threads() };
         println!("Time completed: {} ms", Instant::now().duration_since(start).as_micros() as f64 / 1000.);
     }

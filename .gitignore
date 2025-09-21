@@ -368,3 +368,9 @@ Cargo.lock
 
 # Jetbrains IDE
 **/.idea/*
+
+# Test assets from commercial games (these MUST NOT be committed to the repo!)
+**/fileemu-utoc-stream-emulator/assets/DSZ/*
+**/fileemu-utoc-stream-emulator/assets/E33/*
+**/fileemu-utoc-stream-emulator/assets/P3R/*
+**/fileemu-utoc-stream-emulator/assets/SRC/*

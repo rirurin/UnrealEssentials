@@ -70,7 +70,7 @@ namespace UTOC.Stream.Emulator
             _modLoader.AddOrReplaceController(context.Owner, _api);
         }
 
-        public void Initialise(TocType? tocType, PakType pakType, TocChunkIdType chunkIdType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
+        public void Initialise(EngineVersion? tocType, PakType pakType, string fileIoStoreSig, string readBlockSig, Action<string> addPakFolder, Action<string> removePakFolder)
         {
             _log.Info("Starting UTOC.Stream.Emulator");
             _emu = new UtocEmulator(
@@ -82,10 +82,9 @@ namespace UTOC.Stream.Emulator
             var ctrl_weak = _modLoader.GetController<IEmulationFramework>().TryGetTarget(out var framework);
             _emu.TocVersion = tocType; // Set Toc Version
             _emu.PakVersion = pakType; // Set Pak Version
-            _emu.ChunkIdVersion = chunkIdType;
             if (_emu.TocVersion != null)
             {
-                RustApi.SetTocVersion(_emu.TocVersion.Value, _emu.ChunkIdVersion);
+                RustApi.SetTocVersion(_emu.TocVersion.Value);
                 RustApi.SetupFolderThreads();
             }
             framework!.Register(_emu);
