@@ -1,9 +1,8 @@
 use bitflags::bitflags;
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::ReadBytesExt;
 use std::{
     collections::{HashMap, HashSet},
-    io::{Cursor, Seek, SeekFrom},
-    mem,
+    io::Cursor,
     sync::Mutex
 };
 

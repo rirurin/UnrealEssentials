@@ -205,6 +205,15 @@ namespace UTOC.Stream.Emulator
             Marshal.FreeHGlobal(mod_path_unicode);
         }
 
+        public void AddFromFolderWithMount(string dir_path, string virtual_path)
+        {
+            nint mod_path_unicode = Marshal.StringToHGlobalUni(dir_path);
+            nint virtual_path_unicode = Marshal.StringToHGlobalUni(virtual_path);
+            RustApi.AddFromFoldersWithMount(mod_path_unicode, dir_path.Length, virtual_path_unicode, virtual_path.Length);
+            Marshal.FreeHGlobal(mod_path_unicode );
+            Marshal.FreeHGlobal(virtual_path_unicode);
+        }
+
         public void MakeFilesOnInit() // from base Unreal Essentials path
         {
             if (TocVersion == null)

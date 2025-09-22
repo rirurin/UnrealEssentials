@@ -5,4 +5,6 @@ public interface IUtocEmulator
         Action<string> addPakFolder, Action<string> removePakFolder);
 
     public void AddFromFolder(string folder);
+
+    public void AddFromFolderWithMount(string folder, string virtualfolder);
 }

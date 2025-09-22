@@ -1,8 +1,7 @@
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::{
     error::Error,
-    fmt,
-    io::{Cursor, Read, Write, Seek, SeekFrom}
+    io::{Read, Write, Seek, SeekFrom}
 };
 
 // Serialized versions of Unreal Engine's FString type. Mostly used as an intermediate between bytes and a full string

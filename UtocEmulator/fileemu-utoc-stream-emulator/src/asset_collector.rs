@@ -1,18 +1,13 @@
 use crate::{
     io_package,
-    io_toc::IoChunkId,
     metadata::{UtocMetadata, UTOC_METADATA},
-    platform::Metadata,
-    toc_factory::TARGET_TOC
+    platform::Metadata
 };
 use std::{
-    cell::RefCell,
-    collections::{BTreeSet, HashMap},
     fs, fs::File,
     io::BufReader,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock, Weak},
-    time::Instant
+    path::{Path, PathBuf, Component},
+    sync::{Arc, Mutex, RwLock, Weak}
 };
 
 pub type TocDirectorySyncRef = Arc<RwLock<TocDirectory>>;
@@ -35,7 +30,28 @@ pub fn add_from_folders(mod_path: &str) {
         if let None = *root_dir_lock {
             *root_dir_lock = Some(TocDirectory::new_rc(None));
         }
-        add_from_folders_inner(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), &mod_path, &mut profiler_mod.data, true);
+        
+        add_from_folders_inner(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), &mod_path.into(), &mut profiler_mod.data, true);
+        (*profiler_lock).as_mut().unwrap().mods_loaded.push(profiler_mod);
+    }
+}
+
+pub fn add_from_folders_with_mount(mod_path: &str, virtual_path: &str) {
+    // mod loading happens synchronously, safe to unwrap
+    let mut profiler_lock = ASSET_COLLECTOR_PROFILER.lock().unwrap();
+    if *profiler_lock == None { // Check profiler is active
+        *profiler_lock = Some(AssetCollectorProfiler::new());
+    }
+    let mod_path: PathBuf = PathBuf::from(mod_path);
+    if Path::exists(Path::new(&mod_path)) {
+        let mut profiler_mod = AssetCollectorProfilerMod::new(mod_path.to_str().unwrap());
+        let mut root_dir_lock = ROOT_DIRECTORY.lock().unwrap();
+        if let None = *root_dir_lock {
+            *root_dir_lock = Some(TocDirectory::new_rc(None));
+        }
+        let virtual_parent: TocDirectorySyncRef = TocDirectory::mount_virtual_path(Arc::clone(&(*root_dir_lock).as_ref().unwrap()), virtual_path);
+        
+        add_from_folders_inner(virtual_parent, &mod_path.into(), &mut profiler_mod.data, false);
         (*profiler_lock).as_mut().unwrap().mods_loaded.push(profiler_mod);
     }
 }
@@ -48,7 +64,7 @@ pub fn add_from_folders(mod_path: &str) {
 
 pub struct TocDirectory {
     pub name:           Option<String>, // leaf name only (directory name or file name)
-    pub parent:         Weak        <RwLock<TocDirectory>>, // weakref to parent for path building for FIoChunkIds
+    pub parent:         Weak        <RwLock<TocDirectory>>, // weak ref to parent for path building for FIoChunkIds
     pub first_child:    Option      <TocDirectorySyncRef>, // first child
     last_child:         Weak        <RwLock<TocDirectory>>, // O(1) insertion on directory add
     pub next_sibling:   Option      <TocDirectorySyncRef>, // next sibling
@@ -57,6 +73,35 @@ pub struct TocDirectory {
 }
 
 impl TocDirectory {
+    pub fn mount_virtual_path(self_dir: TocDirectorySyncRef, virtual_path: &str) -> TocDirectorySyncRef {
+
+        let mut current_ref = Arc::clone(&self_dir);
+        let mut first_component = true;
+        for path_part in Path::new(virtual_path).components() {
+            let mut name = match path_part {
+                Component::Normal(os_str) => os_str.to_string_lossy().to_string(),
+                _ => continue,
+            };
+
+            if first_component {
+                first_component = false;
+                if name != "Engine" {
+                    name = String::from("Game");
+                }
+            }
+            match TocDirectory::get_child_dir(Arc::clone(&current_ref), &name) {
+                Some(existing) => current_ref = existing,
+                None => {
+                    let new_dir = TocDirectory::new_rc(Some(name.clone()));
+                    TocDirectory::add_directory(Arc::clone(&current_ref), Arc::clone(&new_dir));
+                    current_ref = new_dir;
+                }
+            }
+        }
+
+        current_ref
+    }
+    
     pub fn new(name: Option<String>) -> Self {
         Self {
             name,
@@ -100,7 +145,7 @@ impl TocDirectory {
         replacee: TocFileSyncRef, // the file to get replaced (file merging is a future problem)
         replacer: TocFileSyncRef // file that'll take the place of replacee in the chain
     ) {
-        if let None = replacee.read().unwrap().next.as_ref() { // replacee is the last file in chain, dir->last_file = weakref(replacer)
+        if let None = replacee.read().unwrap().next.as_ref() { // replacee is the last file in chain, dir->last_file = weak ref(replacer)
             dir.write().unwrap().last_file = Arc::downgrade(&replacer);
         } else { // replacee is at the start or in the middle, set replacer->next = replacee->next
             replacer.write().unwrap().next = Some(Arc::clone(replacee.read().unwrap().next.as_ref().unwrap()));
@@ -116,7 +161,7 @@ impl TocDirectory {
     #[inline]
     fn add_another_file(dir: TocDirectorySyncRef, file: TocFileSyncRef) {
         dir.read().unwrap().last_file.upgrade().unwrap().write().unwrap().next = Some(Arc::clone(&file)); // own our new child on the end of children linked list
-        dir.write().unwrap().last_file = Arc::downgrade(&file); // and set the tail to weakref of the new child
+        dir.write().unwrap().last_file = Arc::downgrade(&file); // and set the tail to weak ref of the new child
     }
     // go through file list to check if the target file already exists, then replace it with our own
     // otherwise, add our file to the end
@@ -238,7 +283,7 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
         match &i {
             Ok(fs_obj) => { // we have our file system object, now determine if it's a directory or folder
                 let fs_obj_os_name = fs_obj.file_name(); // this does assume that the object name is valid Unicode
-                let mut name = String::from(fs_obj_os_name.to_str().unwrap()); // if it's not i'll be very surprised
+                let mut name = String::from(fs_obj_os_name.to_str().unwrap()); // if it's not I'll be very surprised
                 let file_type = fs_obj.file_type().unwrap();
                 if file_type.is_dir() { // new directory. mods can only expand on this
                     let mut inner_path = PathBuf::from(os_path);
@@ -274,7 +319,7 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
                                         let current_file = File::open(fs_obj.path().to_str().unwrap()).unwrap();
                                         let mut file_reader = BufReader::with_capacity(4, current_file);
                                         if !io_package::is_valid_asset_type::<BufReader<File>, byteorder::NativeEndian>(&mut file_reader) {
-                                            profiler.add_skipped_file(os_path.to_str().unwrap(), format!("Uses cooked package"), file_size);
+                                            profiler.add_skipped_file(os_path.to_str().unwrap(), format!("Uses cooked package, size: {file_size} bytes"), file_size);
                                             continue
                                         }
                                     }
@@ -286,7 +331,7 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
                                 },
                                 // TODO: Unsupported file extensions go into PAK
                                 // Io Store forces you to also make a pak file (hopefully DC's patches can fix this)
-                                None => profiler.add_skipped_file(fs_obj.path().to_str().unwrap(), format!("Unsupported file type"), file_size)
+                                None => profiler.add_skipped_file(fs_obj.path().to_str().unwrap(), "Unsupported file type".to_string(), file_size)
                             }
                         },
                         None => {
@@ -297,7 +342,7 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
                                 }
                                 utoc_meta_lock.as_mut().unwrap().add_entries::<byteorder::NativeEndian>(fs::read(fs_obj.path()).unwrap());
                             } else {
-                                profiler.add_skipped_file(fs_obj.path().to_str().unwrap(), format!("No file extension"), file_size);
+                                profiler.add_skipped_file(fs_obj.path().to_str().unwrap(), "No file extension".to_string(), file_size);
                             }
                         }
                     }
@@ -449,10 +494,10 @@ impl AssetCollectorProfiler {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    /*use std::sync::Arc;
     use crate::{asset_collector, asset_collector::ROOT_DIRECTORY, io_package::PackageSummary2, io_toc::IoStoreTocHeaderType3, toc_factory, 
         toc_factory::TocResolverCommon, toc_factory::TARGET_TOC, toc_factory::DEFAULT_COMPRESSION_BLOCK_ALIGNMENT};
-    /* 
+    
     #[test]
     fn test_collect_assets() {
         let mods = vec!["p3rpc.catherinefont", "p3rpc.classroomcheatsheet", "p3rpc.controlleruioverhaul.xbox", 

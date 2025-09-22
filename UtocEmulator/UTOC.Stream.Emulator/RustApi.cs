@@ -14,6 +14,9 @@ namespace UTOC.Stream.Emulator
         public static extern void AddFromFolders(nint modPath, nint modPathLength);
         //public static extern void AddFromFolders(string mod_id, string mod_path);
 
+        [DllImport("fileemu_utoc_stream_emulator")] // Collect assets
+        public static extern void AddFromFoldersWithMount(nint modPath, nint modPathLength, nint virtualPath, nint virtualPathLength);
+
         [DllImport("fileemu_utoc_stream_emulator")] // Build UTOC
         public static extern IntPtr BuildTableOfContents(string tocPath, IntPtr settings, uint settingsLength, ref long length);
 

@@ -1,22 +1,21 @@
 ﻿using Reloaded.Hooks.Definitions;
-using Reloaded.Memory.Sigscan;
+using Reloaded.Memory.Sigscan.Definitions;
 using Reloaded.Mod.Interfaces;
+using Reloaded.Mod.Interfaces.Internal;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UnrealEssentials.Configuration;
-using UnrealEssentials.Template;
-using static UnrealEssentials.Unreal.Native;
-using static UnrealEssentials.Utils;
-using static UnrealEssentials.Unreal.UnrealMemory;
-using static UnrealEssentials.Unreal.UnrealString;
-using static UnrealEssentials.Unreal.UnrealArray;
-using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
-using Reloaded.Mod.Interfaces.Internal;
-using Reloaded.Memory.Sigscan.Definitions;
-using UTOC.Stream.Emulator.Interfaces;
-using Reloaded.Mod.Interfaces.Structs.Enums;
 using UnrealEssentials.Interfaces;
+using UnrealEssentials.Template;
 using UnrealEssentials.Unreal;
+using UTOC.Stream.Emulator.Interfaces;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using static UnrealEssentials.Unreal.Native;
+using static UnrealEssentials.Unreal.UnrealArray;
+using static UnrealEssentials.Unreal.UnrealString;
+using static UnrealEssentials.Utils;
+using IReloadedHooks = Reloaded.Hooks.ReloadedII.Interfaces.IReloadedHooks;
 
 namespace UnrealEssentials;
 /// <summary>
@@ -92,7 +91,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _signingKeys->Function = 0;
         _signingKeys->Size = 0;
 
-        // Setup mods path
+        // Setup mods mountFilePath
         var modPath = new DirectoryInfo(_modLoader.GetDirectoryForModId(_modConfig.ModId));
         _modsPath = modPath.Parent!.FullName;
 
@@ -151,7 +150,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _modLoader.ModLoading += ModLoading;
 
         // Expose API
-        _api = new Api(AddFolder);
+        _api = new Api(AddFolder, AddFolderWithVirtualMount, AddFileWithVirtualMount);
         _modLoader.AddOrReplaceController(context.Owner, _api);
     }
 
@@ -302,17 +301,51 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
     private void ModLoading(IModV1 mod, IModConfigV1 modConfig)
     {
-        var modsPath = Path.Combine(_modLoader.GetDirectoryForModId(modConfig.ModId), "UnrealEssentials");
+        var modRootPath = _modLoader.GetDirectoryForModId(modConfig.ModId);
+        LoadUEMounts(modRootPath, Path.Combine(modRootPath, "UEMounts.yaml"));
+
+        var modsPath = Path.Combine(modRootPath, "UnrealEssentials");
         if (!Directory.Exists(modsPath))
             return;
 
         AddFolder(modsPath);
     }
 
+    private void LoadUEMounts(string modRootPath, string mountFilePath)
+    {
+        if (File.Exists(mountFilePath))
+        {
+            Log($"Loading virtual paths from {mountFilePath}.");
+            List<VirtualEntry> virtualPaths = new DeserializerBuilder()
+            .WithNamingConvention(UnderscoredNamingConvention.Instance).WithEnforceRequiredMembers()
+            .Build().Deserialize<List<VirtualEntry>>(File.ReadAllText(mountFilePath));
+            foreach (var item in virtualPaths)
+            {
+                if (File.Exists(item.OSPath))
+                {
+                    AddFileWithVirtualMount(Path.Combine(modRootPath, item.OSPath), item.VirtualPath);
+                }
+                else if (Directory.Exists(item.OSPath))
+                {
+                    AddFolderWithVirtualMount(Path.Combine(modRootPath, item.OSPath), item.VirtualPath);
+                }
+                else
+                {
+                    LogError($"OSPath: {item.OSPath} supplied in {mountFilePath} does not exist!");
+                }
+            }
+        }
+    }
+
     private void AddFolder(string folder)
     {
+        if (!Directory.Exists(folder))
+        {
+            LogError($"Folder {folder} does not exist, skipping.");
+            return;
+        }
         _pakFolders.Add(folder);
-        AddRedirections(folder);
+        AddRedirections(folder, null);
         Log($"Loading files from {folder}");
 
         // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
@@ -320,20 +353,65 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
             _utocEmulator.AddFromFolder(folder);
     }
 
-    private void AddRedirections(string modsPath)
+    private void AddFolderWithVirtualMount(string folder, string virtualPath)
+    {
+        if (!Directory.Exists(folder))
+        {
+            LogError($"Folder {folder} does not exist, skipping.");
+            return;
+        }
+        _pakFolders.Add(folder);
+        AddRedirections(folder, virtualPath);
+        Log($"Loading files from {folder}, with emulated mountFilePath {virtualPath}");
+
+        // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
+        if (_hasUtocs)
+            _utocEmulator.AddFromFolderWithMount(folder, virtualPath);
+    }
+
+    private void AddFileWithVirtualMount(string file, string virtualPath)
+    {
+        if(!File.Exists(file))
+        {
+            LogError($"File {file} does not exist, skipping.");
+            return;
+        }
+        _pakFolders.Add(file);
+        _redirections[virtualPath] = file;
+        Log($"Loading file at {file}, with emulated mountFilePath {virtualPath}");
+
+        // Prevent UTOC Emulator from wasting time creating UTOCs if the game doesn't use them
+        if (_hasUtocs)
+            _utocEmulator.AddFromFolderWithMount(file, virtualPath);
+    }
+
+    private void AddRedirections(string modsPath, string? virtualPath)
     {
         foreach (var file in Directory.EnumerateFiles(modsPath, "*", SearchOption.AllDirectories))
         {
-            var gamePath = Path.Combine(@"..\..\..", Path.GetRelativePath(modsPath, file)); // recreate what the game would try to load
+            string relativeFilePath = Path.GetRelativePath(modsPath, file);
+            string gamePath;
+
+            if (!string.IsNullOrWhiteSpace(virtualPath))
+            {
+                // Use virtual mount mountFilePath
+                gamePath = Path.Combine(@"..\..\..", virtualPath, relativeFilePath);
+            }
+            else
+            {
+                gamePath = Path.Combine(@"..\..\..", relativeFilePath);
+            }
+
+            string normalizedGamePath = gamePath.Replace('\\', '/');
             _redirections[gamePath] = file;
-            _redirections[gamePath.Replace('\\', '/')] = file; // UE could try to load it using either separator
+            _redirections[normalizedGamePath] = file;
         }
     }
 
     private void AddPakFolder(string path)
     {
         _pakFolders.Add(path);
-        AddRedirections(path);
+        AddRedirections(path, null);
         Log($"Loading PAK files from {path}");
     }
 

@@ -1,10 +1,6 @@
 use crate::{
     asset_collector, 
-    toc_factory, toc_factory::{CONTAINER_DATA, CONTAINER_ENTRIES_OSPATH_POOL, TARGET_TOC, TARGET_CAS, PartitionBlock}
-};
-use std::{
-    ffi::CStr,
-    os::raw::c_char
+    toc_factory, toc_factory::{CONTAINER_DATA, TARGET_TOC, TARGET_CAS, PartitionBlock}
 };
 
 #[no_mangle]
@@ -13,6 +9,18 @@ use std::{
 pub unsafe extern "C" fn AddFromFolders(modPath: *const u16, modPathLength: usize) {
     let mod_path_slice = std::slice::from_raw_parts(modPath, modPathLength);
     asset_collector::add_from_folders(&String::from_utf16(mod_path_slice).unwrap());
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn AddFromFoldersWithMount(
+    mod_path: *const u16,
+    mod_path_length: usize,
+    virtual_path: *const u16,
+    virtual_path_length: usize
+) {
+    let mod_path_inner = std::slice::from_raw_parts(mod_path, mod_path_length);
+    let virtual_path_inner = std::slice::from_raw_parts(virtual_path, virtual_path_length);
+    asset_collector::add_from_folders_with_mount(&String::from_utf16(mod_path_inner).unwrap(), &String::from_utf16(virtual_path_inner).unwrap());
 }
 
 #[no_mangle]
