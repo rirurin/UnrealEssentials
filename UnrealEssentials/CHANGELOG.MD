@@ -1,4 +1,7 @@
 # Unreal Essentials Changelog
+## 1.3.0
+- @TheBestAstroNOT Added support for adding files or folders with a virtual path (path that is different from that on the OS) through the mod's API and the new UEMounts.yaml file (documentation pending)
+
 ## 1.2.0
 - Added IUnrealMemory to the API to help working with memory using the native UE allocator (@TheBestAstroNOT)
 
