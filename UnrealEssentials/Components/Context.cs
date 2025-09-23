@@ -8,6 +8,7 @@ using Reloaded.Mod.Interfaces;
 using UnrealEssentials.Configuration;
 using UnrealEssentials.SignatureList;
 using UnrealEssentials.SignatureList.Game;
+using UnrealEssentials.Types;
 using UnrealEssentials.Unreal;
 using UTOC.Stream.Emulator.Interfaces;
 using YamlDotNet.Serialization;
@@ -142,6 +143,81 @@ internal class Context
     {
         return _redirections.TryGetValue(gameFilePath, out looseFile);
     }
+
+    private static bool TryGetSignatureFromFileDescription(Dictionary<string?, Signatures> VersionSigs, ProcessModule mainModule, out Signatures? sigs)
+    {
+        // Dynamically load DLL needed for methods to get executable resource metadata from
+        sigs = null;
+        var winVerDll = Imports.LoadLibraryA("Api-ms-win-core-version-l1-1-0.dll");
+        if (winVerDll == null)
+        {
+            return false;
+        }
+        unsafe
+        {
+            var getFileVersionInfoSizeA =
+                (delegate* unmanaged[Stdcall]<string, uint*, uint>)Imports.GetProcAddress(winVerDll,
+                    "GetFileVersionInfoSizeA");
+            if (getFileVersionInfoSizeA == null)
+            {
+                return false;
+            }
+            var infoSize = getFileVersionInfoSizeA(mainModule!.FileName, null);
+            var infoBuffer = new byte[infoSize];
+            var getFileVersionInfoA =
+                (delegate* unmanaged[Stdcall]<string, uint, uint, byte*, bool>)Imports.GetProcAddress(winVerDll,
+                    "GetFileVersionInfoA");
+            if (getFileVersionInfoA == null)
+            {
+                return false;
+            }
+            fixed (byte* pInfoBuffer = infoBuffer)
+            {
+                if (!getFileVersionInfoA(mainModule!.FileName, 0, infoSize, pInfoBuffer))
+                {
+                    return false;
+                }
+                // https://learn.microsoft.com/en-us/windows/win32/api/winver/nf-winver-verqueryvaluea
+                var verQueryValueA =
+                    (delegate* unmanaged[Stdcall]<byte*, string, nint*, uint*, bool>)Imports.GetProcAddress(winVerDll,
+                        "VerQueryValueA");
+                if (verQueryValueA == null)
+                {
+                    return false;
+                }
+
+                // Get language + codepage
+                LanguageCodePage* translate = null;
+                uint translateSize = 0;
+                if (!verQueryValueA(pInfoBuffer, "\\VarFileInfo\\Translation", (nint*)(&translate), &translateSize))
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < translateSize / sizeof(LanguageCodePage); i++)
+                {
+                    // Check FileDescription entry for StringFileInfo
+                    var translateEntry = (translate + i);
+                    char* fileDescription = null;
+                    uint fileDescBytes = 0;
+                    // VerQueryValue for strings includes null terminator in length
+                    if (!verQueryValueA(pInfoBuffer,
+                            $"\\StringFileInfo\\{translateEntry->wLanguage:x04}{translateEntry->wCodePage:x04}\\FileDescription", 
+                            (nint*)(&fileDescription), &fileDescBytes))
+                    {
+                        return false;
+                    }
+                    if (VersionSigs.TryGetValue(Marshal.PtrToStringAnsi((nint)fileDescription, (int)fileDescBytes - 1), 
+                            out var sigsMaybe))
+                    {
+                        sigs = sigsMaybe;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     
     private static bool TryGetSignatures(IModLoader _modLoader, out Signatures sigs)
     {
@@ -155,23 +231,24 @@ internal class Context
                     // get the string value of VersionIdentifier from the first attribute of name "SignatureAttribute"
                     x.CustomAttributes.Where(a => a.AttributeType == typeof(SignatureAttribute)).Select(a => a.NamedArguments.Where(b => b.MemberName == "VersionIdentifier").Select(b => (string)b.TypedValue.Value).First()).First(),
                     // create an instance of the target class, then get it's signature list
-                    ((ISignatureList)x.GetConstructor( BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.HasThis, new Type[] {}, null).Invoke(new object[] {})).GetSignatures()
+                    ((ISignatureList)x.GetConstructor( BindingFlags.Instance | BindingFlags.Public, null, CallingConventions.HasThis, [], null).Invoke([])).GetSignatures()
                 )
             ).ToDictionary(x => x.Item1, x => x.Item2);
         // Try and find based on file name
         if (VersionSigs.TryGetValue(fileName, out sigs))
             return true;
-        
+
         // Try and find based on the executable's file description
-        // This is required for Sonic Racing CrossWorlds since it's filename references
-        // the online store it's bought from (e.g SonicRacingCrossWorldsSteam.exe)
-        // Guardians of Azuma requires it since it's exe is named Game-Win64-Shipping lol
-        if (VersionSigs.TryGetValue(FileVersionInfo.GetVersionInfo(fileName).FileDescription, out sigs))
+        if (TryGetSignatureFromFileDescription(VersionSigs, mainModule!, out var sigsMaybe))
+        {
+            sigs = sigsMaybe.Value;
             return true;
+        }
+        
+        _modLoader.GetController<IScannerFactory>().TryGetTarget(out var scannerFactory);
+        var scanner = scannerFactory!.CreateScanner(CurrentProcess, mainModule);
 
         // Try and find based on branch name
-        _modLoader.GetController<IScannerFactory>().TryGetTarget(out var scannerFactory);
-        var scanner = scannerFactory.CreateScanner(CurrentProcess, mainModule);
         var results = scanner.FindPatterns(new List<string>() {
             "2B 00 2B 00 55 00 45 00 34 00 2B 00", // ++UE4+
             "2B 00 2B 00 75 00 65 00 34 00 2B 00", // ++ue4+

@@ -1,4 +1,5 @@
 ﻿using Reloaded.Hooks.Definitions;
+using UnrealEssentials.Configuration;
 using UnrealEssentials.Unreal;
 namespace UnrealEssentials.Components;
 using static Utils;
@@ -7,6 +8,7 @@ internal class UtocMethods
 {
     // State objects
     private readonly IReloadedHooks _hooks;
+    private Config _config;
     private Context _context;
     
     private IHook<GetPakSigningKeys>? _getSigningKeysHook;
@@ -16,10 +18,11 @@ internal class UtocMethods
     private IHook<FAsyncPackage2_StartLoading3>? _startLoading3;
     private IHook<FAsyncPackage2_StartLoading4>? _startLoading4;
 
-    public unsafe UtocMethods(IReloadedHooks hooks, Context context)
+    public unsafe UtocMethods(IReloadedHooks hooks, Config config, Context context)
     {
         // Get dependency objects
         _hooks = hooks;
+        _config = config;
         _context = context;
         // Remove utoc signing
         SigScan(_context._signatures.GetPakSigningKeys, "GetSigningKeysPtr", address =>
@@ -79,9 +82,9 @@ internal class UtocMethods
     {
         var DiskName = Self->DiskPackageName;
         var ChunkId = new Native.FIoChunkId(Self->DiskPackageId, 0, 2);
-        if (!DiskName.IsNone())
+        if (!DiskName.IsNone() && _config.FileAccessLog)
         {
-            LogDebug($"StartLoading: {DiskName} ({ChunkId})");    
+            Log($"StartLoading: {DiskName}");    
         }
         _startLoading0.OriginalFunction(Self);
     }
@@ -90,9 +93,9 @@ internal class UtocMethods
     private unsafe void FAsyncPackage2_StartLoading1Impl(Native.FAsyncPackage2_UE5_0* Self, nint IoBatch)
     {
         var DiskName = Self->PackagePathToLoad;
-        if (!DiskName.IsNone())
+        if (!DiskName.IsNone() && _config.FileAccessLog)
         {
-            LogDebug($"StartLoading: {DiskName}");    
+            Log($"StartLoading: {DiskName}");    
         }
         _startLoading1.OriginalFunction(Self, IoBatch);
     }
@@ -101,9 +104,9 @@ internal class UtocMethods
     private unsafe void FAsyncPackage2_StartLoading2Impl(Native.FAsyncPackage2_UE5_1* Self, nint IoBatch) 
     {
         var DiskName = Self->PackagePathToLoad;
-        if (!DiskName.IsNone())
+        if (!DiskName.IsNone() && _config.FileAccessLog)
         {
-            LogDebug($"StartLoading: {DiskName}");    
+            Log($"StartLoading: {DiskName}");    
         }
         _startLoading2.OriginalFunction(Self, IoBatch);
     }
@@ -112,9 +115,9 @@ internal class UtocMethods
     private unsafe void FAsyncPackage2_StartLoading3Impl(Native.FAsyncPackage2_UE5_3* Self, nint ThreadState, nint IoBatch) 
     {
         var DiskName = Self->PackagePathToLoad;
-        if (!DiskName.IsNone())
+        if (!DiskName.IsNone() && _config.FileAccessLog)
         {
-            LogDebug($"StartLoading: {DiskName}");    
+            Log($"StartLoading: {DiskName}");    
         }
         _startLoading3.OriginalFunction(Self, ThreadState, IoBatch);
     }
@@ -123,9 +126,9 @@ internal class UtocMethods
     private unsafe void FAsyncPackage2_StartLoading4Impl(Native.FAsyncPackage2_UE5_4* Self, nint ThreadState, nint IoBatch) 
     {
         var DiskName = Self->PackagePathToLoad;
-        if (!DiskName.IsNone())
+        if (!DiskName.IsNone() && _config.FileAccessLog)
         {
-            LogDebug($"StartLoading: {DiskName}");    
+            Log($"StartLoading: {DiskName}");    
         }
         _startLoading4.OriginalFunction(Self, ThreadState, IoBatch);
     }

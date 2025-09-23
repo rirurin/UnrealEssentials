@@ -84,7 +84,7 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
         _pakMethods = new PakMethods(_hooks!, _configuration, _context!);
         if (_context!._hasUtocs)
         {
-            _utocMethods = new UtocMethods(_hooks!, _context!);
+            _utocMethods = new UtocMethods(_hooks!, _configuration, _context!);
         }
         UnrealName.FNamePool.Initialize(_hooks!, _context!._signatures);
 
