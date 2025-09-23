@@ -1,5 +1,6 @@
 use crate::{
     asset_collector, 
+    log,
     toc_factory, toc_factory::{CONTAINER_DATA, TARGET_TOC, TARGET_CAS, PartitionBlock}
 };
 
@@ -45,7 +46,7 @@ pub unsafe extern "C" fn BuildTableOfContentsEx(
     let cas_path = base_path_owned.to_owned() + "\\" + TARGET_CAS;
     match toc_factory::build_table_of_contents(&toc_path, version) {
         Some(n) => {
-            println!("Built table of contents");
+            log!(Debug, "Built table of contents");
             // UTOC
             *tocLength = n.len() as u64; // set length parameter
             *tocData = n.leak().as_ptr(); // leak memory lol (toc data needs to live for rest of program)
@@ -53,7 +54,7 @@ pub unsafe extern "C" fn BuildTableOfContentsEx(
             let container_lock = CONTAINER_DATA.lock().unwrap();
             match (*container_lock).as_ref() {
                 Some(n) => {
-                    println!("Built container file");
+                    log!(Debug, "Built container file");
                     *blocks = n.virtual_blocks.as_ptr();
                     *blockCount = n.virtual_blocks.len();
                     *header = n.header.as_ptr();

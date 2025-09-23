@@ -24,6 +24,7 @@ use crate::{
         IoStoreTocCompressedBlockEntry, IoOffsetAndLength
     },
     metadata::{UtocMetadata, UTOC_METADATA},
+    log,
     string::{FString32NoHash, FStringSerializer, FStringSerializerExpectedLength, Hasher16}
 };
 
@@ -54,7 +55,7 @@ pub fn build_table_of_contents(toc_path: &str, version: u32) -> Option<Vec<u8>> 
         match (*root_dir_lock).as_ref() {
             Some(root) => Some(build_table_of_contents_inner(Arc::clone(root), toc_path)),
             None => {
-                println!("WARNING: No mod files were loaded for {}", file_name);
+                log!(Debug, "WARNING: No mod files were loaded for {}", file_name);
                 None
             }
         }
@@ -283,7 +284,7 @@ impl TocResolverType2 {
                 }
                 let filename_buf = PathBuf::from(&curr_file.read().unwrap().name);
                 let path = path_comps.join("/") + "/" + filename_buf.file_stem().unwrap().to_str().unwrap();
-                //println!("{} PATH: {}, OS: {}", &curr_file.borrow().name, &path, &curr_file.borrow().os_file_path);
+                //log!(Debug, "{} PATH: {}, OS: {}", &curr_file.borrow().name, &path, &curr_file.borrow().os_file_path);
                 flat_file.hash_path = path;
                 // go to next file
                 tracker.resolved_files += 1;
@@ -378,7 +379,7 @@ impl TocResolverType2 {
         (**pool_guard).as_mut().unwrap().push(target_file.os_path.encode_utf16().collect::<Vec<u16>>());
         let curr_ospath = &mut (**pool_guard).as_mut().unwrap()[index];
         curr_ospath.push(0);
-        //println!("adding {} to partition block", curr_ospath);
+        //log!(Debug, "adding {} to partition block", curr_ospath);
         let new_partition_block = PartitionBlock {
             os_path: curr_ospath.as_ptr() as usize,
             start: self.cas_pointer,
@@ -411,7 +412,7 @@ impl TocResolverType2 {
 // TODO: Support UE5 (sometime soon)
 
 pub fn build_table_of_contents_inner(root: TocDirectorySyncRef, toc_path: &str) -> Vec<u8> {
-    //println!("BUILD TABLE OF CONTENTS FOR {}", TARGET_TOC);
+    //log!(Debug, "BUILD TABLE OF CONTENTS FOR {}", TARGET_TOC);
     let mut profiler = TocBuilderProfiler::new();
     let mut resolver = TocResolverType2::new::<
         IoStoreTocHeaderType2
@@ -486,7 +487,7 @@ impl TocBuilderProfiler {
     }
     fn display_results(&self) {
         // TODO: Advanced display results
-        println!("Flatten Time: {} ms", self.time_to_flatten as f64 / 1000f64);
-        println!("Serialize Time: {} ms", self.time_to_serialize as f64 / 1000f64);
+        log!(Debug, "Flatten Time: {} ms", self.time_to_flatten as f64 / 1000f64);
+        log!(Debug, "Serialize Time: {} ms", self.time_to_serialize as f64 / 1000f64);
     }
 }

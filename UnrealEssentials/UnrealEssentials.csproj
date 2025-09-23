@@ -55,4 +55,8 @@
     <ProjectReference Include="..\UTOC.Stream.Emulator.Interfaces\UTOC.Stream.Emulator.Interfaces.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\" />
+  </ItemGroup>
+
 </Project>

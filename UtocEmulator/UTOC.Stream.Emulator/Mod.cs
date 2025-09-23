@@ -63,6 +63,7 @@ namespace UTOC.Stream.Emulator
             _modConfig = context.ModConfig;
 
             _log = new Logger(_logger, _configuration.LogLevel);
+            LogAdapter.RegisterLogger(_log);
 
             // Expose API
             _api = new Api(Initialise, (folder) => _emu.AddFromFolder(folder), (folder, mount) => _emu.AddFromFolderWithMount(folder, mount));

@@ -5,12 +5,12 @@ A mod for [Reloaded-II](https://reloaded-project.github.io/Reloaded-II/) that ma
 - Loading full UTOC and PAK files from mods
 - Loading loose files from UTOCs and PAKs
 - Removing signature checks so any file can be used
-- Logging file access (inside of PAKs only for now)
-- Support for UE 4.25 to 4.27 games (see [Supported Games](#supported-games))
+- Logging file access
+- Support for UE 4.25-4.27 and 5.0-5.4 (see [Supported Games](#supported-games) for more details)
 - API for adding file replacements from code (see [documentation](/UnrealEssentials.Interfaces/README.md))
 
 ## Planned Features
-- Support for older UE4 versions and UE5
+- Support for older UE4 versions and UE5 versions 5.5 and above
 - Automatic conversion of cooked uassets to IO Store uassets (see note in [Loose Files](#loose-files))
 
 ## Supported Games
@@ -18,15 +18,21 @@ Below is a list of games that are known to work with Unreal Essentials. Just bec
 
 If you know of a game that doesn't work you can create an [issue](https://github.com/AnimatedSwine37/UnrealEssentials/issues) and support might be added for it.
 
-| Game                            | Notes                                                                                                                |
-|---------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| Hi-Fi Rush                      | Microsoft Store version is currently broken ([Issue](https://github.com/AnimatedSwine37/UnrealEssentials/issues/13)) |
-| Hogwarts Legacy                 |
-| Persona 3 Reload                |
-| Sackboy: A Big Adventure        |
-| Scarlet Nexus                   |
-| Shin Megami Tensei V: Vengeance |
-| The Callisto Protocol           | Need to use ASI Loader or remove DRM with [Steamless](https://github.com/atom0s/Steamless/)                          |
+| Game       | UE Version | Support      |
+|------------|-|------------|
+| Clair Obscura: Expedition 33 | 5.4 | TODO
+| DRAGON BALL: Sparking! ZERO | 5.1 | TODO
+| Hi-Fi Rush       | 4.27 |  |
+| Hogwarts Legacy  | 4.27 |
+| Jujutsu Kaisen: Cursed Clash | 5.1 | TODO
+| Lies of P | 4.27 | TODO
+| Persona 3 Reload | 4.27 |
+| Rune Factory: Guardians of Azuma | 5.4 | TODO
+| Sonic Racing: CrossWorlds | 5.4 | TODO
+| Sackboy: A Big Adventure | 4.25 |
+| Scarlet Nexus | 4.25 |
+| Shin Megami Tensei V: Vengeance | 4.27 |
+| The Callisto Protocol | 4.27 | Need to use ASI Loader or remove DRM with [Steamless](https://github.com/atom0s/Steamless/) |
 
 ## Usage
 First you'll need to create a Reloaded mod and set Unreal Esentials as a dependency of it. For more details on making a mod check out Reloaded's [documentation](https://reloaded-project.github.io/Reloaded-II/CreatingMods/).

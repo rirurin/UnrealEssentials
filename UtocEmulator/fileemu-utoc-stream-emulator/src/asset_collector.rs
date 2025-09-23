@@ -1,5 +1,6 @@
 use crate::{
     io_package,
+    log,
     metadata::{UtocMetadata, UTOC_METADATA},
     platform::Metadata
 };
@@ -295,7 +296,7 @@ pub fn add_from_folders_inner(parent: TocDirectorySyncRef, os_path: &PathBuf, pr
                             // Set the root directory to Game if it isn't engine so people can use the game name (assuming only Engine and Game)
                             if first && name != "Engine"
                             {
-                                println!("Setting root directory {} to Game", name);
+                                log!(Debug, "Setting root directory {} to Game", name);
                                 name = GAME_ROOT.to_string();
                             }
 
@@ -421,23 +422,23 @@ impl AssetCollectorProfilerModContents {
     }
 
     pub fn print(&self) {
-        //println!("Created tree in {} ms", self.time_to_tree as f64 / 1000f64);
-        println!("{} directories added", self.directory_count);
-        println!("{} added files ({} KB)", self.added_files_count, self.added_files_size / 1024);
-        println!("{} replaced files ({} KB)", self.replaced_files_count, self.replaced_files_size / 1024);
+        //log!(Debug, "Created tree in {} ms", self.time_to_tree as f64 / 1000f64);
+        log!(Debug, "{} directories added", self.directory_count);
+        log!(Debug, "{} added files ({} KB)", self.added_files_count, self.added_files_size / 1024);
+        log!(Debug, "{} replaced files ({} KB)", self.replaced_files_count, self.replaced_files_size / 1024);
         if self.incorrect_asset_header.len() > 0 {
-            println!("{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
-            println!("INCORRECT ASSET FORMAT: {} FILES", self.incorrect_asset_header.len());
+            log!(Debug, "{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
+            log!(Debug, "INCORRECT ASSET FORMAT: {} FILES", self.incorrect_asset_header.len());
             for i in &self.incorrect_asset_header {
-                println!("{}", i);
+                log!(Debug, "{}", i);
             }
-            println!("If you're the mod author, please make sure that you've followed the guide at \"https://github.com/AnimatedSwine37/UnrealEssentials\" to create correctly formatted assets");
+            log!(Debug, "If you're the mod author, please make sure that you've followed the guide at \"https://github.com/AnimatedSwine37/UnrealEssentials\" to create correctly formatted assets");
         }
         if self.failed_file_system_objects.len() > 0 {
-            println!("{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
-            println!("FAILED TO LOAD: {} FILES", self.failed_file_system_objects.len());
+            log!(Debug, "{}", "-".repeat(AssetCollectorProfiler::get_terminal_length()));
+            log!(Debug, "FAILED TO LOAD: {} FILES", self.failed_file_system_objects.len());
             for i in &self.failed_file_system_objects {
-                println!("Inside folder \"{}\", reason \"{}\"", i.os_path, i.reason);
+                log!(Debug, "Inside folder \"{}\", reason \"{}\"", i.os_path, i.reason);
             }
         }
     }
@@ -458,7 +459,7 @@ impl AssetCollectorProfilerMod {
     }
 
     fn print(&self) {
-        println!("{}", self.os_path);
+        log!(Debug, "{}", self.os_path);
         self.data.print();
     }
 }
@@ -479,15 +480,15 @@ impl AssetCollectorProfiler {
     }
     pub fn print_centered(text: &str) {
         let left_spaces = (AssetCollectorProfiler::get_terminal_length() - text.len()) / 2;
-        println!("{}{}", " ".repeat(left_spaces), text);
+        log!(Debug, "{}{}", " ".repeat(left_spaces), text);
     }
     pub fn print(&self) {
-        println!("{}", "#".repeat(AssetCollectorProfiler::get_terminal_length()));
+        log!(Debug, "{}", "#".repeat(AssetCollectorProfiler::get_terminal_length()));
         AssetCollectorProfiler::print_centered(&format!("ASSET COLLECTOR: Collected files from {} mods", self.mods_loaded.len()));
-        println!("{}", "=".repeat(AssetCollectorProfiler::get_terminal_length()));
+        log!(Debug, "{}", "=".repeat(AssetCollectorProfiler::get_terminal_length()));
         for m in &self.mods_loaded {
             m.print();
-            println!("{}", "=".repeat(AssetCollectorProfiler::get_terminal_length()));
+            log!(Debug, "{}", "=".repeat(AssetCollectorProfiler::get_terminal_length()));
         }
     }
 }
@@ -513,7 +514,7 @@ mod tests {
         }
         asset_collector::print_asset_collector_results();
         for (i, time) in timers.iter().enumerate() {
-            println!("{}: {} ms", mods[i], (time - if i > 0 { timers[i - 1]} else { 0 }) as f64 / 1000f64);
+            log!(Debug, "{}: {} ms", mods[i], (time - if i > 0 { timers[i - 1]} else { 0 }) as f64 / 1000f64);
         }
         /* 
         let mut profiler = toc_factory::TocBuilderProfiler::new();

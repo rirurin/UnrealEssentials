@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 
 namespace UTOC.Stream.Emulator
 {
-    public static class RustApi
+    public static unsafe class RustApi
     {
+
+        const string __DllName = "fileemu_utoc_stream_emulator";
 
         [DllImport("fileemu_utoc_stream_emulator")] // Collect assets
         public static extern void AddFromFolders(nint modPath, nint modPathLength);
@@ -36,5 +38,8 @@ namespace UTOC.Stream.Emulator
             nint basePath, nint basePathLength, uint version, ref nint tocData, ref nint tocLength,
             ref nint blocks, ref nint blockCount, ref nint header, ref nint headerSize
         );
+
+        [DllImport(__DllName, EntryPoint = "set_reloaded_logger", CallingConvention = CallingConvention.StdCall, ExactSpelling = true)]
+        internal static extern void SetReloadedLogger(delegate* unmanaged[Stdcall]<nint, nint, int, void> offset);
     }
 }
