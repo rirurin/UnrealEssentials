@@ -21,6 +21,8 @@ public class UE_4_25 : ISignatureList
             // TocVersion = EngineVersion.UE_4_25,
             TocVersion = TocType.Initial,
             PakVersion = PakType.FrozenIndex,
+            AllowExecuteCommands = true,
+            CommandExecutorType = ObjectCommandExecutorType.GlobalOnly,
         };
     }
 

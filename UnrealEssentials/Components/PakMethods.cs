@@ -42,7 +42,6 @@ internal class PakMethods
     private unsafe void GetPakFoldersImpl(nuint cmdLine, TArray<FString>* outPakFolders)
     {
         _getPakFoldersHook!.OriginalFunction(cmdLine, outPakFolders);
-
         // Resize the array
         if (outPakFolders->Capacity <= _context!._pakFolders.Count + outPakFolders->Length)
         {

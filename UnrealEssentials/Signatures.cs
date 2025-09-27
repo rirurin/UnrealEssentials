@@ -12,6 +12,13 @@ public enum StartLoadingDelegateType
     AsyncPackageInheritsRefCount, // UE 5.7+
 }
 
+public enum ObjectCommandExecutorType
+{
+    GlobalOnly,
+    AddDevEditor,
+    AddRuntime
+}
+
 public struct Signatures
 {
     internal string GetPakSigningKeys { get; set; } // Function call to FCoreDelegates::GetPakSigningKeysDelegate in FIoStoreTocResource::Read (short jump)
@@ -30,6 +37,8 @@ public struct Signatures
     internal string FAsyncPackage2_StartLoading { get; set; }
     internal StartLoadingDelegateType StartLoadDelegate { get; set; }
     internal string GFNamePool { get; set; }
+    internal bool AllowExecuteCommands { get; set; }
+    internal ObjectCommandExecutorType CommandExecutorType { get; set; }
 }
 
 

@@ -27,6 +27,8 @@ public class UE_4_27 : ISignatureList
             FAsyncPackage2_StartLoading = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 48 8B D9 48 8D 4C 24 ??",
             StartLoadDelegate = StartLoadingDelegateType.NoArgs,
             GFNamePool = "4C 8D 05 ?? ?? ?? ?? EB ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 8B C0 C6 05 ?? ?? ?? ?? 01 48 8B 45 ??",
+            AllowExecuteCommands = true,
+            CommandExecutorType = ObjectCommandExecutorType.GlobalOnly,
         };
     }
 

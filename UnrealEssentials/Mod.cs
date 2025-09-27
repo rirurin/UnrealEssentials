@@ -79,8 +79,8 @@ public unsafe class Mod : ModBase, IExports // <= Do not Remove.
 
         if (!Context.TryCreateContext(_modLoader, _modConfig, out _context))
             return;
-
-        Memory = new UnrealMemory(_context!._signatures.GMalloc, _hooks);
+        Memory = new UnrealMemory(_context!._signatures.GMalloc, _hooks, 
+            _context!._signatures.AllowExecuteCommands, _context!._signatures.CommandExecutorType);
         _pakMethods = new PakMethods(_hooks!, _configuration, _context!);
         if (_context!._hasUtocs)
         {

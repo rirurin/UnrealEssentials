@@ -13,6 +13,8 @@ public class UE_5_5 : ISignatureList
             // TocVersion = EngineVersion.UE_5_5,
             PakVersion = PakType.Fn64BugFix,
             StartLoadDelegate = StartLoadingDelegateType.DescAddInstancingContext,
+            AllowExecuteCommands = true,
+            CommandExecutorType = ObjectCommandExecutorType.AddRuntime,
         };
     }
 
