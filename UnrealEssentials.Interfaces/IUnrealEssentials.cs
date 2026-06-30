@@ -35,4 +35,13 @@ public interface IUnrealEssentials
     /// <returns>The <see cref="IUnrealMemory"/> instance</returns>
     /// <remarks>The returned instance is a singleton so you can keep a reference to it rather than calling this every time you need it.</remarks>
     IUnrealMemory GetMemory();
+
+    /// <summary>
+    /// Gets the branch version of the running game.
+    /// </summary>
+    /// <returns>
+    /// A string formatted using the branch name convention: <c>++UE[Major]+Release-[Major].[Minor]</c><br/>
+    /// For example, a UE 5.4 game would return <c>++UE5+Release-5.4</c>, while a 4.27 game would return <c>++UE4+Release-4.27</c>
+    /// </returns>
+    string GetEngineVersion();
 }

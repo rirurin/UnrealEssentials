@@ -61,7 +61,7 @@ where P0: AsRef<Path>, P1: AsRef<Path> {
         } else {
             path
         }
-    };
+    }.to_lowercase();
     let parts: Vec<&str> = path.splitn(3, "/").collect();
     // check that path is that long
     let domain = match parts[0] {

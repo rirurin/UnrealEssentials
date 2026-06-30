@@ -57,7 +57,8 @@ public class Mod : ModBase, IExports
         _modLoader.ModLoading += ModLoading;
 
         // Expose API
-        _api = new Api(_context!.AddFolder, _context!.AddFolderWithVirtualMount, _context!.AddFileWithVirtualMount);
+        _api = new Api(_context!.Properties.EngineVersion, _context!.AddFolder, 
+            _context!.AddFolderWithVirtualMount, _context!.AddFileWithVirtualMount);
         _modLoader.AddOrReplaceController(context.Owner, _api);
     }
 
