@@ -1,4 +1,11 @@
 # Changelog
+
+## Unreal Essentials/UTOC Emulator 2.0.1
+@rirurin :
+- Treat OS file paths as case-insensitive to align with IO Store's case insensitivity, and to fix a bug where file paths would not replace if the capitalization was different
+- Add GFNamePool to Shin Megami Tensei V: Vengenance
+- Add GetEngineVersion to the Unreal Essentials API
+
 ## Unreal Essentials 2.0.0 & UTOC Emulator 2.0.0
 @rirurin ( + testing from @raycopper ) :
 - Logs made in the Rust part of UTOC Emulator are now printed using the Reloaded logger so it's saved to the log file.
@@ -23,6 +30,3 @@
   - For versions UE 5.0 - 5.2, it's required that all loose assets include some asset metadata to ensure that dependencies can be resolved accurately (this is also an issue with UE4 but is optional to maintain backwards compatibility). This can either take the form of metadata for each asset (`.uassetmeta`) or as one table in the root folder (`.utocmeta`)
 - Rewritten UTOC Emulator to use [retoc](https://github.com/trumank/retoc) for serialization and to simplify the asset collector and archive builder.
 - Added a command-line and GUI tool (`utoc-extractor`) to allow for IO Store archive unpacking with automatically generated asset metadata and for conversion between metadata forms.
-
-## Unreal Essentials 1.3.0 & UTOC Emulator 1.2.0
-- @TheBestAstroNOT Added support for adding files or folders with a virtual path (path that is different from that on the OS) through the mod's API and the new UEMounts.yaml file (documentation pending)
